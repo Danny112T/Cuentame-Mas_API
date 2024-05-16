@@ -1,16 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from bcrypt import hashpw, gensalt, checkpw
 from jose import JWTError, jwt
-from src.graphql.models.user import UserType, TokenType
+from os import environ
+import typing
+from strawberry.types import Info
+from strawberry.permission import BasePermission
 from src.graphql.config.db.db import collection_name
-from src.graphql.schemas.input_schema import CreateUserInput
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from src.graphql.models.user import UserType, TokenType
+from src.graphql.schemas.input_schema import CreateUserInput, loginInput
 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15000
-
-oauth2 = OAuth2PasswordBearer(tokenUrl="login")
+ALGORITHM = environ.get("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+    environ.get("ACCESS_TOKEN_EXPIRE_MINUTES"), 15000
+)
+SECRET = environ.get("JWT_SECRET")
 
 
 def makeUserDict(input: CreateUserInput) -> dict:
@@ -61,7 +65,16 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
 
-async def loginUser(input: loginInput) -> TokenType:
+def getCurrentUser(token: str) -> UserType | None:
+    user_info = verify_jwt(token)
+    if user_info is not None:
+        user = collection_name.find_one({"email": user_info["sub"]})
+        user["id"] = str(user.pop("_id"))
+        return UserType(**user)
+    return None
+
+
+async def login(input: loginInput) -> TokenType:
     user = collection_name.find_one({"email": input.email})
     if user is None:
         raise HTTPException(
@@ -73,6 +86,49 @@ async def loginUser(input: loginInput) -> TokenType:
         )
 
     access_token = {
-        "sub": jwt.encode(access_token, SECRET, algorithm=ALGORITHM),
+        "sub": user["email"],
         "exp": datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
+
+    return TokenType(
+        **{
+            "access_token": jwt.encode(access_token, SECRET, algorithm=ALGORITHM),
+            "token_type": "bearer",
+        }
+    )
+
+
+def verify_jwt(token: str):
+    try:
+        decode_token = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+        current_timestamp = datetime.now().timestamp()
+        if decode_token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        elif decode_token["exp"] <= current_timestamp:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credential's token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return decode_token
+    except ValueError:
+        return False
+
+
+class IsAuthenticated(BasePermission):
+    message = "User is not Authenticated"
+
+    def has_permission(self, source: typing.Any, info: Info, **kwargs) -> bool:
+        request = info.context["request"]
+        # Access headers authentication
+        authentication = request.headers["Authorization"]
+        if authentication:
+            token = authentication.split("Bearer ")[-1]
+            user = getCurrentUser(token)
+            if user:
+                return True
+        return False
