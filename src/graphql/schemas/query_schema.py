@@ -3,6 +3,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from src.graphql.models.user import UserType
 from src.graphql.config.db.db import collection_name
+from src.graphql.resolvers.users_resolver import IsAuthenticated, getCurrentUser
 
 
 @strawberry.type
@@ -32,3 +33,12 @@ class Query:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
+
+    @strawberry.field(
+        permission_classes=[IsAuthenticated],
+        description="Bring data about the current user",
+    )
+    async def me(self, info) -> UserType | None:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        user = getCurrentUser(token)
+        return user
