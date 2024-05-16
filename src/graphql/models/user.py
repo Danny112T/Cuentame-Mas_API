@@ -28,17 +28,12 @@ class User(BaseModel):
 class UserType:
     pass
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    id: str = Field(None, alias="_id")
 
 @strawberry.experimental.pydantic.type(model=Token, all_fields=True)
 class TokenType:
-    pass
-
-@strawberry.experimental.pydantic.type(model=TokenData, all_fields=True)
-class TokenDataType:
     pass
