@@ -12,7 +12,7 @@ from src.graphql.schemas.input_schema import CreateUserInput, loginInput
 
 ALGORITHM = environ.get("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
-    environ.get("ACCESS_TOKEN_EXPIRE_MINUTES"), 15000
+    environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "15000")
 )
 SECRET = environ.get("JWT_SECRET")
 
