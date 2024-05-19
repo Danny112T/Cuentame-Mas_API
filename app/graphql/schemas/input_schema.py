@@ -1,6 +1,5 @@
 import strawberry
 from typing import Optional
-from src.graphql.models.user import RegimenFiscal
 
 
 @strawberry.input

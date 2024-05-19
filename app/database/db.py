@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from src.graphql.config.core import settings
+from app.config import settings
 
 name_db = settings.MONGO_DB
 mongo_uri = settings.MONGO_URI

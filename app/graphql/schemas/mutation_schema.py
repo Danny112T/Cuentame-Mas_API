@@ -1,7 +1,7 @@
 import strawberry
-from src.graphql.schemas.input_schema import CreateUserInput, loginInput
-from src.graphql.models.user import UserType, TokenType
-from src.graphql.resolvers.users_resolver import createUser, login
+from app.graphql.schemas.input_schema import CreateUserInput, loginInput
+from app.models.user import UserType, TokenType
+from app.graphql.resolvers.users_resolver import createUser, login
 
 
 @strawberry.type

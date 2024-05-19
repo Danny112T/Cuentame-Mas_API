@@ -1,10 +1,10 @@
 import strawberry
 from bson import ObjectId
 from fastapi import HTTPException, status
-from src.graphql.models.user import UserType
-from src.graphql.config.db.db import collection_name
-from src.graphql.resolvers.users_resolver import IsAuthenticated, getCurrentUser
-
+from app.models.user import UserType
+from app.database.db import collection_name
+from app.graphql.resolvers.users_resolver import getCurrentUser
+from app.auth.JWTBearer import IsAuthenticated
 
 @strawberry.type
 class Query:
