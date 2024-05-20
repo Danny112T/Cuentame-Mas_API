@@ -1,9 +1,14 @@
 import strawberry
 from bson import ObjectId
+from app.models.user import UserType
 from fastapi import HTTPException, status
-from src.graphql.models.user import UserType
-from src.graphql.config.db.db import collection_name
-from src.graphql.resolvers.users_resolver import IsAuthenticated, getCurrentUser
+from app.database.db import db
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.graphql.resolvers.users_resolver import (
+    getCurrentUser,
+    get_pagination_window,
+)
+from app.auth.JWTBearer import IsAuthenticated
 
 
 @strawberry.type
@@ -14,7 +19,7 @@ class Query:
 
     @strawberry.field(description="Get a user by id")
     async def getUserbyId(self, id: str) -> UserType:
-        user = collection_name.find_one({"_id": ObjectId(id)})
+        user = db["users"].find_one({"_id": ObjectId(id)})
         if user:
             user["id"] = str(user.pop("_id"))
             return UserType(**user)
@@ -25,7 +30,7 @@ class Query:
 
     @strawberry.field(description="Get a user by email")
     async def getUserByEmail(self, email: str) -> UserType:
-        user = collection_name.find_one({"email": email})
+        user = db["users"].find_one({"email": email})
         if user:
             user["id"] = str(user.pop("_id"))
             return UserType(**user)
@@ -42,3 +47,21 @@ class Query:
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         user = getCurrentUser(token)
         return user
+
+    @strawberry.field(description="Get a list of users.")
+    async def getAllUsers(
+        self,
+        order_by: str,
+        limit: int,
+        offset: int = 0,
+        desc: bool = False,
+    ) -> PaginationWindow[UserType]:
+
+        return await get_pagination_window(
+            dataset="users",
+            ItemType=UserType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+        )

@@ -15,7 +15,7 @@ class User(BaseModel):
     lastname: str
     custom_instruction: str | None = None
     email: str
-    regimenFiscal: RegimenFiscal = RegimenFiscal.NO_DEFINIDO
+    regimenFiscal: RegimenFiscal = RegimenFiscal.NO_DEFINIDO.value
     password: str
     created_at: datetime
     updated_at: datetime | None = None

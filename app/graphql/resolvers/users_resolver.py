@@ -1,0 +1,190 @@
+from jose import jwt
+from pymongo import DESCENDING, ASCENDING
+from datetime import datetime, timedelta
+from fastapi import HTTPException, status
+from app.database.db import db
+from app.models.user import UserType, TokenType, RegimenFiscal
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.graphql.schemas.input_schema import (
+    CreateUserInput,
+    UpdateUserInput,
+    loginInput,
+)
+from app.auth.JWTManager import (
+    JWTManager,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    SECRET,
+)
+
+
+def makeCreateUserDict(input: CreateUserInput) -> dict:
+    return {
+        "name": input.name,
+        "lastname": input.lastname,
+        "email": input.email,
+        "created_at": datetime.now(),
+        "updated_at": None,
+    }
+
+
+def makeUpdateUserDict(input: UpdateUserInput) -> dict:
+    return {
+        "name": input.name,
+        "lastname": input.lastname,
+        "email": input.email,
+        "custom_instruction": input.custom_instruction,
+        "regimenFiscal": input.regimenFiscal,
+        "updated_at": datetime.now(),
+    }
+
+
+async def createUser(input: CreateUserInput) -> UserType:
+    if db["users"].find_one({"email": input.email}) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
+        )
+
+    user_dict = makeCreateUserDict(input)
+
+    user_dict["password"] = JWTManager.hashPassword(input.password)
+    user_dict["custom_instruction"] = None
+    user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
+
+    insert_result = db["users"].insert_one(user_dict)
+    if insert_result.acknowledged:
+        inserted_user = db["users"].find_one({"_id": insert_result.inserted_id})
+        if inserted_user:
+            inserted_user["id"] = str(inserted_user.pop("_id"))
+            return UserType(**inserted_user)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve inserted user",
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to insert user",
+        )
+
+
+async def updateUser(input: UpdateUserInput) -> UserType:
+    user = db["users"].find_one({"email": input.email})
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+        )
+
+    user_dict = makeUpdateUserDict(input)
+    if input.password:
+        user_dict["password"] = JWTManager.hashPassword(input.password)
+
+    if user_dict["name"] is None:
+        user_dict["name"] = user["name"]
+
+    if user_dict["lastname"] is None:
+        user_dict["lastname"] = user["lastname"]
+
+    if user_dict["email"] is None:
+        user_dict["email"] = user["email"]
+
+    if user_dict["custom_instruction"] is None:
+        user_dict["custom_instruction"] = user["custom_instruction"]
+
+    if user_dict["regimenFiscal"] is None:
+        user_dict["regimenFiscal"] = user["regimenFiscal"]
+
+    update_result = db["users"].update_one(
+        {"email": user["email"]}, {"$set": user_dict}, upsert=False
+    )
+
+    if update_result.matched_count == 1:
+        updated_user = db["users"].find_one({"email": user["email"]})
+        updated_user["id"] = str(updated_user.pop("_id"))
+    return UserType(**updated_user)
+
+
+async def deleteUser(email: str) -> UserType:
+    user = db["users"].find_one({"email": email})
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+        )
+
+    user["id"] = str(user.pop("_id"))
+    db["users"].delete_one({"email": email})
+    return UserType(**user)
+
+
+async def get_pagination_window(
+    dataset: str,
+    ItemType: type,
+    order_by: str,
+    limit: int,
+    offset: int = 0,
+    desc: bool = False,
+) -> PaginationWindow:
+    """
+    Get one pagination window on the given dataset for the given limit
+    and offset, ordered by the given attribute and filtered using the
+    given filters
+    """
+    data = []
+    order_type = ASCENDING
+
+    if limit <= 0 or limit > 100:
+        raise Exception(f"limit ({limit}) must be between 0-100")
+
+    if desc:
+        order_type = DESCENDING
+    else:
+        order_type = ASCENDING
+
+    for x in db[dataset].find().sort(order_by, order_type):
+        x["id"] = str(x.pop("_id"))
+        data.append(ItemType(**x))
+
+    total_items_count = db[dataset].count_documents({})
+
+    if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
+        raise Exception(
+            f"offset ({offset}) is out of range " f"(0-{total_items_count - 1})"
+        )
+
+    data = data[offset : offset + limit]
+
+    return PaginationWindow(items=data, total_items_count=total_items_count)
+
+
+def getCurrentUser(token: str) -> UserType | None:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is not None:
+        user = db["users"].find_one({"email": user_info["sub"]})
+        user["id"] = str(user.pop("_id"))
+        return UserType(**user)
+    return None
+
+
+async def login(input: loginInput) -> TokenType:
+    user = db["users"].find_one({"email": input.email})
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+        )
+    if not JWTManager.checkPassword(input.password, user["password"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect credentials"
+        )
+
+    access_token = {
+        "sub": user["email"],
+        "exp": datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    }
+
+    return TokenType(
+        **{
+            "access_token": jwt.encode(access_token, SECRET, algorithm=ALGORITHM),
+            "token_type": "bearer",
+        }
+    )
