@@ -12,12 +12,12 @@ class CreateUserInput:
 
 @strawberry.input
 class UpdateUserInput:
-    name: Optional[str] = strawberry.unset
-    lastname: Optional[str] = strawberry.unset
-    custom_instruction: Optional[str] = strawberry.unset
-    age: Optional[int] = strawberry.unset
-    regimenFiscal: Optional[str] = strawberry.unset
-    password: Optional[str] = strawberry.unset
+    email: str
+    name: Optional[str] = None
+    lastname: Optional[str] = None
+    custom_instruction: Optional[str] = None
+    regimenFiscal: Optional[str] = None
+    password: Optional[str] = None
 
 
 @strawberry.input
