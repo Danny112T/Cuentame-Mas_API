@@ -13,7 +13,6 @@ class User(BaseModel):
     id: str = Field(None, alias="_id")
     name: str
     lastname: str
-    custom_instruction: str | None = None
     email: str
     regimenFiscal: RegimenFiscal = RegimenFiscal.NO_DEFINIDO.value
     password: str

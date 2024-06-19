@@ -33,7 +33,6 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
         "name": input.name,
         "lastname": input.lastname,
         "email": input.email,
-        "custom_instruction": input.custom_instruction,
         "regimenFiscal": input.regimenFiscal,
         "updated_at": datetime.now(),
     }
@@ -48,7 +47,6 @@ async def createUser(input: CreateUserInput) -> UserType:
     user_dict = makeCreateUserDict(input)
 
     user_dict["password"] = JWTManager.hashPassword(input.password)
-    user_dict["custom_instruction"] = None
     user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
 
     insert_result = db["users"].insert_one(user_dict)
@@ -70,6 +68,9 @@ async def createUser(input: CreateUserInput) -> UserType:
 
 
 async def updateUser(input: UpdateUserInput) -> UserType:
+    if input.email is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email field is required")
+    
     user = db["users"].find_one({"email": input.email})
     if user is None:
         raise HTTPException(
@@ -88,9 +89,6 @@ async def updateUser(input: UpdateUserInput) -> UserType:
 
     if user_dict["email"] is None:
         user_dict["email"] = user["email"]
-
-    if user_dict["custom_instruction"] is None:
-        user_dict["custom_instruction"] = user["custom_instruction"]
 
     if user_dict["regimenFiscal"] is None:
         user_dict["regimenFiscal"] = user["regimenFiscal"]

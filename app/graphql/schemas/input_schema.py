@@ -15,7 +15,6 @@ class UpdateUserInput:
     email: str
     name: Optional[str] = None
     lastname: Optional[str] = None
-    custom_instruction: Optional[str] = None
     regimenFiscal: Optional[str] = None
     password: Optional[str] = None
 
