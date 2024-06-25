@@ -12,7 +12,7 @@ class CreateUserInput:
 
 @strawberry.input
 class UpdateUserInput:
-    email: str
+    email: Optional[str] = None
     name: Optional[str] = None
     lastname: Optional[str] = None
     regimenFiscal: Optional[str] = None

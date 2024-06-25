@@ -1,6 +1,7 @@
 from jose import jwt
 from pymongo import DESCENDING, ASCENDING
 from datetime import datetime, timedelta
+from bson import ObjectId
 from fastapi import HTTPException, status
 from re import fullmatch
 from app.database.db import db
@@ -17,6 +18,7 @@ from app.auth.JWTManager import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET,
 )
+
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
@@ -76,11 +78,16 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
 
-async def updateUser(input: UpdateUserInput) -> UserType:
-    if input.email is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email field is required")
-    
-    user = db["users"].find_one({"email": input.email})
+async def updateUser(input: UpdateUserInput, token: str) -> UserType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
@@ -108,7 +115,7 @@ async def updateUser(input: UpdateUserInput) -> UserType:
         user_dict["regimenFiscal"] = user["regimenFiscal"]
 
     update_result = db["users"].update_one(
-        {"email": user["email"]}, {"$set": user_dict}, upsert=False
+        {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
     )
 
     if update_result.matched_count == 1:
@@ -117,11 +124,24 @@ async def updateUser(input: UpdateUserInput) -> UserType:
     return UserType(**updated_user)
 
 
-async def deleteUser(email: str) -> UserType:
-    user = db["users"].find_one({"email": email})
+async def deleteUser(email: str, token: str) -> UserType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+        )
+
+    if user["email"] != email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email does not match"
         )
 
     user["id"] = str(user.pop("_id"))
@@ -171,12 +191,16 @@ async def get_pagination_window(
 
 def getCurrentUser(token: str) -> UserType | None:
     user_info = JWTManager.verify_jwt(token)
-    if user_info is not None:
-        user = db["users"].find_one({"email": user_info["sub"]})
-        user["id"] = str(user.pop("_id"))
-        return UserType(**user)
-    return None
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
+    user["id"] = str(user.pop("_id"))
+    return UserType(**user)
 
 async def login(input: loginInput) -> TokenType:
     user = db["users"].find_one({"email": input.email})
@@ -190,7 +214,7 @@ async def login(input: loginInput) -> TokenType:
         )
 
     access_token = {
-        "sub": user["email"],
+        "sub": str(user["_id"]),
         "exp": datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
 
