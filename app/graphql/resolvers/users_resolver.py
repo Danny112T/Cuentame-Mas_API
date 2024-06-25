@@ -2,6 +2,7 @@ from jose import jwt
 from pymongo import DESCENDING, ASCENDING
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
+from re import fullmatch
 from app.database.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
@@ -16,6 +17,8 @@ from app.auth.JWTManager import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET,
 )
+
+REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
 
 def makeCreateUserDict(input: CreateUserInput) -> dict:
@@ -42,6 +45,12 @@ async def createUser(input: CreateUserInput) -> UserType:
     if db["users"].find_one({"email": input.email}) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
+        )
+
+    if not fullmatch(REGEX, input.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
         )
 
     user_dict = makeCreateUserDict(input)
@@ -79,6 +88,11 @@ async def updateUser(input: UpdateUserInput) -> UserType:
 
     user_dict = makeUpdateUserDict(input)
     if input.password:
+        if not fullmatch(REGEX, input.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
+            )
         user_dict["password"] = JWTManager.hashPassword(input.password)
 
     if user_dict["name"] is None:
