@@ -7,6 +7,7 @@ from re import fullmatch
 from app.database.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.reminder import ReminderType
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
@@ -59,6 +60,7 @@ async def createUser(input: CreateUserInput) -> UserType:
 
     user_dict["password"] = JWTManager.hashPassword(input.password)
     user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
+    user_dict["reminders"] = []
 
     insert_result = db["users"].insert_one(user_dict)
     if insert_result.acknowledged:
@@ -145,6 +147,7 @@ async def deleteUser(email: str, token: str) -> UserType:
         )
 
     user["id"] = str(user.pop("_id"))
+    # TODO: db["users"].update_one({"_id": ObjectId(user["id"])}, {"$set": {"deleted_at": datetime.now()}})
     db["users"].delete_one({"email": email})
     return UserType(**user)
 
@@ -200,7 +203,16 @@ def getCurrentUser(token: str) -> UserType | None:
 
     user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     user["id"] = str(user.pop("_id"))
+    user_reminders = db["reminders"].find({"user_id": str(user["id"])})
+    reminders = []
+    for reminder in user_reminders:
+        reminder["id"] = str(reminder.pop("_id"))
+        reminders.append(reminder)
+
+    user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+
     return UserType(**user)
+
 
 async def login(input: loginInput) -> TokenType:
     user = db["users"].find_one({"email": input.email})
