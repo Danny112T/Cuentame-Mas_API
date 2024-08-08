@@ -1,5 +1,6 @@
 import strawberry
 from typing import Optional
+from datetime import datetime
 
 
 @strawberry.input
@@ -23,3 +24,10 @@ class UpdateUserInput:
 class loginInput:
     email: str
     password: str
+
+
+@strawberry.input
+class CreateReminderInput:
+    title: str
+    description: Optional[str] = None
+    finishDate: datetime
