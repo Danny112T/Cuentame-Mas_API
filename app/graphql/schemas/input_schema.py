@@ -31,3 +31,11 @@ class CreateReminderInput:
     title: str
     description: Optional[str] = None
     finishDate: datetime
+
+
+@strawberry.input
+class UpdateReminderInput:
+    id: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    finishDate: Optional[datetime] = None

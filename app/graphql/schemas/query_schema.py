@@ -9,7 +9,7 @@ from app.graphql.resolvers.users_resolver import (
     getCurrentUser,
     get_pagination_window,
 )
-from app.graphql.resolvers.reminders_resolver import get_reminders_pagination_window
+from app.graphql.resolvers.reminders_resolver import get_reminders_pagination_window, getReminder
 from app.auth.JWTBearer import IsAuthenticated
 
 
@@ -89,3 +89,8 @@ class Query:
             desc=desc,
             token=token,
         )
+
+    @strawberry.field(description="Get a reminder by id", permission_classes=[IsAuthenticated])
+    async def getReminderById(self, id: str, info) -> ReminderType:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await getReminder(id, token)
