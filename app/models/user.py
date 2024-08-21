@@ -2,6 +2,8 @@ import strawberry
 from datetime import datetime
 from pydantic import BaseModel, Field
 from enum import Enum
+from typing import List
+from app.models.reminder import ReminderType
 
 
 @strawberry.enum
@@ -13,20 +15,28 @@ class User(BaseModel):
     id: str = Field(None, alias="_id")
     name: str
     lastname: str
-    custom_instruction: str | None = None
     email: str
     regimenFiscal: RegimenFiscal = RegimenFiscal.NO_DEFINIDO.value
     password: str
     created_at: datetime
     updated_at: datetime | None = None
+    reminders: List[str] = []
 
     class Config:
         from_attributes = True
 
 
-@strawberry.experimental.pydantic.type(model=User, all_fields=True)
+@strawberry.experimental.pydantic.type(model=User)
 class UserType:
-    pass
+    id: strawberry.ID
+    name: str
+    lastname: str
+    email: str
+    regimenFiscal: RegimenFiscal
+    password: str
+    created_at: datetime
+    updated_at: datetime | None
+    reminders: List[ReminderType]
 
 
 class Token(BaseModel):

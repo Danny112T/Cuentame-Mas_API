@@ -1,10 +1,13 @@
 from jose import jwt
 from pymongo import DESCENDING, ASCENDING
 from datetime import datetime, timedelta
+from bson import ObjectId
 from fastapi import HTTPException, status
+from re import fullmatch
 from app.database.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.reminder import ReminderType
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
@@ -16,6 +19,9 @@ from app.auth.JWTManager import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET,
 )
+
+
+REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
 
 def makeCreateUserDict(input: CreateUserInput) -> dict:
@@ -33,7 +39,6 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
         "name": input.name,
         "lastname": input.lastname,
         "email": input.email,
-        "custom_instruction": input.custom_instruction,
         "regimenFiscal": input.regimenFiscal,
         "updated_at": datetime.now(),
     }
@@ -45,11 +50,17 @@ async def createUser(input: CreateUserInput) -> UserType:
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
         )
 
+    if not fullmatch(REGEX, input.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
+        )
+
     user_dict = makeCreateUserDict(input)
 
     user_dict["password"] = JWTManager.hashPassword(input.password)
-    user_dict["custom_instruction"] = None
     user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
+    user_dict["reminders"] = []
 
     insert_result = db["users"].insert_one(user_dict)
     if insert_result.acknowledged:
@@ -69,8 +80,16 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
 
-async def updateUser(input: UpdateUserInput) -> UserType:
-    user = db["users"].find_one({"email": input.email})
+async def updateUser(input: UpdateUserInput, token: str) -> UserType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
@@ -78,6 +97,11 @@ async def updateUser(input: UpdateUserInput) -> UserType:
 
     user_dict = makeUpdateUserDict(input)
     if input.password:
+        if not fullmatch(REGEX, input.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
+            )
         user_dict["password"] = JWTManager.hashPassword(input.password)
 
     if user_dict["name"] is None:
@@ -89,14 +113,11 @@ async def updateUser(input: UpdateUserInput) -> UserType:
     if user_dict["email"] is None:
         user_dict["email"] = user["email"]
 
-    if user_dict["custom_instruction"] is None:
-        user_dict["custom_instruction"] = user["custom_instruction"]
-
     if user_dict["regimenFiscal"] is None:
         user_dict["regimenFiscal"] = user["regimenFiscal"]
 
     update_result = db["users"].update_one(
-        {"email": user["email"]}, {"$set": user_dict}, upsert=False
+        {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
     )
 
     if update_result.matched_count == 1:
@@ -105,14 +126,28 @@ async def updateUser(input: UpdateUserInput) -> UserType:
     return UserType(**updated_user)
 
 
-async def deleteUser(email: str) -> UserType:
-    user = db["users"].find_one({"email": email})
+async def deleteUser(email: str, token: str) -> UserType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
         )
 
+    if user["email"] != email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email does not match"
+        )
+
     user["id"] = str(user.pop("_id"))
+    # TODO: db["users"].update_one({"_id": ObjectId(user["id"])}, {"$set": {"deleted_at": datetime.now()}})
     db["users"].delete_one({"email": email})
     return UserType(**user)
 
@@ -159,11 +194,24 @@ async def get_pagination_window(
 
 def getCurrentUser(token: str) -> UserType | None:
     user_info = JWTManager.verify_jwt(token)
-    if user_info is not None:
-        user = db["users"].find_one({"email": user_info["sub"]})
-        user["id"] = str(user.pop("_id"))
-        return UserType(**user)
-    return None
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
+    user["id"] = str(user.pop("_id"))
+    user_reminders = db["reminders"].find({"user_id": str(user["id"])})
+    reminders = []
+    for reminder in user_reminders:
+        reminder["id"] = str(reminder.pop("_id"))
+        reminders.append(reminder)
+
+    user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+
+    return UserType(**user)
 
 
 async def login(input: loginInput) -> TokenType:
@@ -178,7 +226,7 @@ async def login(input: loginInput) -> TokenType:
         )
 
     access_token = {
-        "sub": user["email"],
+        "sub": str(user["_id"]),
         "exp": datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
 

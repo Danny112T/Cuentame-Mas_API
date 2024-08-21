@@ -1,6 +1,7 @@
 import strawberry
 from bson import ObjectId
 from app.models.user import UserType
+from app.models.reminder import ReminderType
 from fastapi import HTTPException, status
 from app.database.db import db
 from app.graphql.types.paginationWindow import PaginationWindow
@@ -8,6 +9,7 @@ from app.graphql.resolvers.users_resolver import (
     getCurrentUser,
     get_pagination_window,
 )
+from app.graphql.resolvers.reminders_resolver import get_reminders_pagination_window, getReminder
 from app.auth.JWTBearer import IsAuthenticated
 
 
@@ -56,7 +58,6 @@ class Query:
         offset: int = 0,
         desc: bool = False,
     ) -> PaginationWindow[UserType]:
-
         return await get_pagination_window(
             dataset="users",
             ItemType=UserType,
@@ -65,3 +66,31 @@ class Query:
             offset=offset,
             desc=desc,
         )
+    
+    @strawberry.field(
+        description="Get a list of Reminders by user",
+        permission_classes=[IsAuthenticated]
+    )
+    async def getAllReminders(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        offset: int = 0,
+        desc: bool = False,
+    ) -> PaginationWindow[ReminderType]:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await get_reminders_pagination_window(
+            dataset="reminders",
+            ItemType=ReminderType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            token=token,
+        )
+
+    @strawberry.field(description="Get a reminder by id", permission_classes=[IsAuthenticated])
+    async def getReminderById(self, id: str, info) -> ReminderType:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await getReminder(id, token)
