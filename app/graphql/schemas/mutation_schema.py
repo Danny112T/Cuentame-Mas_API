@@ -1,13 +1,9 @@
 import strawberry
-from app.graphql.schemas.input_schema import (
-    CreateUserInput,
-    UpdateUserInput,
-    loginInput,
-    CreateReminderInput,
-    UpdateReminderInput
-)
-from app.models.user import UserType, TokenType
+from app.models.chat import ChatType
 from app.models.reminder import ReminderType
+from app.models.user import UserType, TokenType
+from app.graphql.schemas.input_schema import *
+from app.graphql.resolvers.chats_resolver import createChat
 from app.graphql.resolvers.users_resolver import createUser, updateUser, deleteUser, login
 from app.graphql.resolvers.reminders_resolver import createReminder, updateReminder, deleteReminder
 from app.auth.JWTBearer import IsAuthenticated
@@ -84,4 +80,13 @@ class Mutation:
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await deleteReminder(id, token)
     
-    
+    @strawberry.mutation(description="Create a chat", permission_classes=[IsAuthenticated])
+    async def createChat(self, input: CreateChatInput, info) -> ChatType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is not authenticated")
+        
+        if info.context["request"].headers["Authorization"].split("Bearer ")[-1] is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is not authenticated")
+        
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await createChat(input, token)

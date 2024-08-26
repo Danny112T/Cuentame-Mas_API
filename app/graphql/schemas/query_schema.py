@@ -1,16 +1,16 @@
 import strawberry
 from bson import ObjectId
-from app.models.user import UserType
-from app.models.reminder import ReminderType
-from fastapi import HTTPException, status
 from app.database.db import db
-from app.graphql.types.paginationWindow import PaginationWindow
-from app.graphql.resolvers.users_resolver import (
-    getCurrentUser,
-    get_pagination_window,
-)
-from app.graphql.resolvers.reminders_resolver import get_reminders_pagination_window, getReminder
+from app.models.user import UserType
+from app.models.chat import ChatType
+from fastapi import HTTPException, status
+from app.models.message import MessageType
+from app.models.reminder import ReminderType
 from app.auth.JWTBearer import IsAuthenticated
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
+from app.graphql.resolvers.users_resolver import getCurrentUser, get_pagination_window
+from app.graphql.resolvers.reminders_resolver import get_reminders_pagination_window, getReminder
 
 
 @strawberry.type
@@ -94,3 +94,24 @@ class Query:
     async def getReminderById(self, id: str, info) -> ReminderType:
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await getReminder(id, token)
+    
+
+    @strawberry.field(description="Get a list of chats by user", permission_classes=[IsAuthenticated])
+    async def getAllChats(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        offset: int = 0,
+        desc: bool = False,
+    ) -> PaginationWindow[ChatType]:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await get_chats_pagination_window(
+            dataset="chats",
+            ItemType=ChatType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            token=token,
+        )
