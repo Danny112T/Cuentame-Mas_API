@@ -15,6 +15,7 @@ class Reminder(BaseModel):
     class Config:
         from_attributes = True
 
+
 @strawberry.experimental.pydantic.type(model=Reminder, all_fields=True)
 class ReminderType:
     pass

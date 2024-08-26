@@ -54,6 +54,7 @@ class UpdateReminderInput:
 Chats Input
 """
 
+
 @strawberry.input
 class CreateChatInput:
     title: str

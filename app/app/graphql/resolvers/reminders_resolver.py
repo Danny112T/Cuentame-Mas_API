@@ -1,6 +1,6 @@
 from bson import ObjectId
 from datetime import datetime
-from app.database.db import db
+from app.core.db import db
 from fastapi import HTTPException, status
 from pymongo import DESCENDING, ASCENDING
 from app.auth.JWTManager import JWTManager
