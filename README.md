@@ -5,7 +5,7 @@ This repository contains the code for an API of a IA chat bot made with FastAPI 
 
 ## Requirements
 - Python >=3.10
-- Astral UV 0.3.3 [docs.astral.sh/uv](https://docs.astral.sh/uv)
+- [Astral UV](https://docs.astral.sh/uv) >=0.3.3
 
 ## Installation
 
@@ -30,8 +30,8 @@ To run the project in your local environment::
   5. Run the application:
   
 ```bash
-  uv run fastapi dev app/main.py # As development
-  uv run fastapi start app/main.py # As production
+  uv run fastapi dev app/main.py # for development
+  uv run fastapi start app/main.py # for production
 ```
 
 
