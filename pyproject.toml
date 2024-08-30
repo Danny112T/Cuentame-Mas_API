@@ -1,0 +1,23 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.112.2",
+    "strawberry-graphql>=0.237.3",
+    "python-jose>=3.3.0",
+    "pymongo>=4.8.0",
+    "graphql-core>=3.2.3",
+    "pytest>=8.3.2",
+    "python-dotenv>=1.0.1",
+    "passlib>=1.7.4",
+    "bcrypt>=4.2.0",
+    "pydantic-settings>=2.4.0",
+    "starlette>=0.38.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,9 +1,10 @@
 import strawberry
-from datetime import datetime
-from pydantic import BaseModel, Field
 from enum import Enum
 from typing import List
+from datetime import datetime
+from pydantic import BaseModel, Field
 from app.models.reminder import ReminderType
+from app.models.chat import ChatType
 
 
 @strawberry.enum
@@ -21,6 +22,7 @@ class User(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
     reminders: List[str] = []
+    chats: List[str] = []
 
     class Config:
         from_attributes = True
@@ -37,6 +39,7 @@ class UserType:
     created_at: datetime
     updated_at: datetime | None
     reminders: List[ReminderType]
+    chats: List[ChatType]
 
 
 class Token(BaseModel):
