@@ -4,21 +4,17 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from fastapi import HTTPException, status
 from re import fullmatch
-from app.database.db import db
+from app.core.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.reminder import ReminderType
+from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
     loginInput,
 )
-from app.auth.JWTManager import (
-    JWTManager,
-    ALGORITHM,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    SECRET,
-)
+from app.auth.JWTManager import JWTManager
 
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
@@ -171,10 +167,14 @@ async def get_pagination_window(
     if limit <= 0 or limit > 100:
         raise Exception(f"limit ({limit}) must be between 0-100")
 
-    if desc:
-        order_type = DESCENDING
-    else:
-        order_type = ASCENDING
+    if order_by is None:
+        order_by = "created_at"
+
+    order_type = DESCENDING if desc else ASCENDING
+
+    print(dataset)
+    print(db[dataset].find())
+    print(db)
 
     for x in db[dataset].find().sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
@@ -232,7 +232,7 @@ async def login(input: loginInput) -> TokenType:
 
     return TokenType(
         **{
-            "access_token": jwt.encode(access_token, SECRET, algorithm=ALGORITHM),
+            "access_token": jwt.encode(access_token, JWT_SECRET, algorithm=ALGORITHM),
             "token_type": "bearer",
         }
     )

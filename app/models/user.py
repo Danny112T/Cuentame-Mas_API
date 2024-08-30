@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.models.reminder import ReminderType
 from app.models.chat import ChatType
 
+
 @strawberry.enum
 class RegimenFiscal(Enum):
     NO_DEFINIDO: str = "NoDefinido"

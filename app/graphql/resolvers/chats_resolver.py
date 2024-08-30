@@ -4,7 +4,7 @@ from app.auth.JWTManager import JWTManager
 from pymongo import DESCENDING, ASCENDING
 from fastapi import HTTPException, status
 from app.models.chat import ChatType
-from app.database.db import db
+from app.core.db import db
 from datetime import datetime
 from bson import ObjectId
 
