@@ -1,7 +1,7 @@
 
 # Cuentame Más API
 
-This repository contains the code for an API of a IA chat bot made with FastAPI and Strawberry GraphQL as the terminal project of the Computer systems engineering. 
+This repository contains the code for an API of a IA chat bot made with FastAPI and Strawberry GraphQL as the terminal project of the Computer systems engineering.
 
 ## Requirements
 - Python >=3.10
@@ -17,9 +17,11 @@ To run the project in your local environment::
  cd Cuentame-Mas_API
 ```
   2. Create and activate a virtual environment::
+
 ```bash
  uv venv
- source env/bin/activate
+ source env/bin/activate # MacOs
+ .venv\Scripts\activate # Windows
 ```
   3. Install requirements::
 ```bash
@@ -28,7 +30,7 @@ To run the project in your local environment::
 ```
   4. Create a .env file in root and fill it with .env.example
   5. Run the application:
-  
+
 ```bash
   uv run fastapi dev app/main.py # for development
   uv run fastapi start app/main.py # for production
