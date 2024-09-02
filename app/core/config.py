@@ -16,3 +16,4 @@ ALGORITHM = config("ALGORITHM", default="HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
     config("ACCESS_TOKEN_EXPIRE_MINUTES", default="15000")
 )
+EMAIL_VAL: bool = bool(config("EMAIL_VALIDATION", default="False"))

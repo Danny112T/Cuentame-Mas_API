@@ -8,14 +8,14 @@ from app.core.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.reminder import ReminderType
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM
+from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM, EMAIL_VAL
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
     loginInput,
 )
 from app.auth.JWTManager import JWTManager
-
+from email_validator import validate_email, EmailNotValidError
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
@@ -45,6 +45,14 @@ async def createUser(input: CreateUserInput) -> UserType:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
         )
+
+    try:
+        email_info = validate_email(input.email, check_deliverability=EMAIL_VAL)
+    except EmailNotValidError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=e
+        )
+
 
     if not fullmatch(REGEX, input.password):
         raise HTTPException(

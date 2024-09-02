@@ -33,6 +33,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "bcrypt" },
+    { name = "email-validator" },
     { name = "fastapi", extra = ["standard"] },
     { name = "graphql-core" },
     { name = "passlib" },
@@ -48,6 +49,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bcrypt", specifier = ">=4.2.0" },
+    { name = "email-validator", specifier = ">=2.2.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.112.2" },
     { name = "graphql-core", specifier = ">=3.2.3" },
     { name = "passlib", specifier = ">=1.7.4" },
