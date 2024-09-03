@@ -8,6 +8,7 @@ from app.core.db import db
 from app.models.user import UserType, TokenType, RegimenFiscal
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.reminder import ReminderType
+from app.models.chat import ChatType
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM, EMAIL_VAL
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
@@ -61,7 +62,7 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
     user_dict = makeCreateUserDict(input)
-
+    user_dict["email"] = email_info.normalized
     user_dict["password"] = JWTManager.hashPassword(input.password)
     user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
     user_dict["reminders"] = []
@@ -213,11 +214,17 @@ def getCurrentUser(token: str) -> UserType | None:
     user["id"] = str(user.pop("_id"))
     user_reminders = db["reminders"].find({"user_id": str(user["id"])})
     reminders = []
+    chats = []
     for reminder in user_reminders:
         reminder["id"] = str(reminder.pop("_id"))
         reminders.append(reminder)
 
+    for chat in db["chats"].find({"user_id": str(user["id"])}):
+            chat["id"] = str(chat.pop("_id"))
+            chats.append(chat)
+
     user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+    user["chats"] = [ChatType(**chat) for chat in chats]
 
     return UserType(**user)
 

@@ -58,3 +58,8 @@ Chats Input
 @strawberry.input
 class CreateChatInput:
     title: str
+
+@strawberry.input
+class UpdateChatInput:
+    id: str
+    title: str

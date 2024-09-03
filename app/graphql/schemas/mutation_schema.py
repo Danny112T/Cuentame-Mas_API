@@ -3,7 +3,6 @@ from app.models.chat import ChatType
 from app.models.reminder import ReminderType
 from app.models.user import UserType, TokenType
 from app.graphql.schemas.input_schema import *
-from app.graphql.resolvers.chats_resolver import createChat
 from app.graphql.resolvers.users_resolver import (
     createUser,
     updateUser,
@@ -14,6 +13,11 @@ from app.graphql.resolvers.reminders_resolver import (
     createReminder,
     updateReminder,
     deleteReminder,
+)
+from app.graphql.resolvers.chats_resolver import (
+    createChat,
+    updateChat,
+    deleteChat,
 )
 from app.auth.JWTBearer import IsAuthenticated
 from fastapi import HTTPException, status
@@ -160,3 +164,45 @@ class Mutation:
 
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await createChat(input, token)
+
+    @strawberry.mutation(
+        description="Update a chat", permission_classes=[IsAuthenticated]
+    )
+    async def updateChat(self, input: UpdateChatInput, info) -> ChatType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        if (
+            info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await updateChat(input, token)
+
+    @strawberry.mutation(description="Delete a chat", permission_classes=[IsAuthenticated])
+    async def deleteChat(self, id: str, info) -> ChatType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        if (
+            info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await deleteChat(id, token)
