@@ -181,12 +181,21 @@ async def get_pagination_window(
 
     order_type = DESCENDING if desc else ASCENDING
 
-    print(dataset)
-    print(db[dataset].find())
-    print(db)
-
     for x in db[dataset].find().sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
+        user_reminders = db["reminders"].find({"user_id": str(x["id"])})
+        reminders = []
+        chats = []
+        for reminder in user_reminders:
+            reminder["id"] = str(reminder.pop("_id"))
+            reminders.append(reminder)
+
+        for chat in db["chats"].find({"user_id": str(x["id"])}):
+                chat["id"] = str(chat.pop("_id"))
+                chats.append(chat)
+
+        x["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+        x["chats"] = [ChatType(**chat) for chat in chats]
         data.append(ItemType(**x))
 
     total_items_count = db[dataset].count_documents({})

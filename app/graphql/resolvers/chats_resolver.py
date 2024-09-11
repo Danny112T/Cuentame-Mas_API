@@ -106,6 +106,7 @@ async def get_chats_pagination_window(
 
     return PaginationWindow(items=data, total_items_count=total_items_count)
 
+
 async def updateChat(input: UpdateChatInput, token: str) -> ChatType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
@@ -145,6 +146,7 @@ async def updateChat(input: UpdateChatInput, token: str) -> ChatType:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update chat",
         )
+
 
 async def deleteChat(id: str, token: str) -> ChatType:
     user_info = JWTManager.verify_jwt(token)

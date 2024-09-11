@@ -1,3 +1,4 @@
+from typing_extensions import Optional
 import strawberry
 from bson import ObjectId
 from app.core.db import db
@@ -14,6 +15,7 @@ from app.graphql.resolvers.reminders_resolver import (
     get_reminders_pagination_window,
     getReminder,
 )
+from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window
 
 
 @strawberry.type
@@ -120,4 +122,28 @@ class Query:
             offset=offset,
             desc=desc,
             token=token,
+        )
+
+    @strawberry.field(
+        description="Get a list of messages by chat", permission_classes=[IsAuthenticated]
+    )
+    async def getAllMessages(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        chat_id: str,
+        offset: int = 0,
+        desc: bool = True,
+    ) -> PaginationWindow[MessageType]:
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await get_msgs_pagination_window(
+            dataset="messages",
+            ItemType=MessageType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            token=token,
+            chat_id=chat_id,
         )

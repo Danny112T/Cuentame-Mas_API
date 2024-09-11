@@ -1,6 +1,7 @@
 import strawberry
 from typing import Optional
 from datetime import datetime
+from app.models.message import Role
 
 """
 Users Input
@@ -63,3 +64,14 @@ class CreateChatInput:
 class UpdateChatInput:
     id: str
     title: str
+
+
+"""
+Messages Input
+"""
+
+@strawberry.input
+class CreateMessageInput:
+    chat_id: str
+    content: str
+    role: Role
