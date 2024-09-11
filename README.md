@@ -5,7 +5,7 @@ This repository contains the code for an API of a IA chat bot made with FastAPI 
 
 ## Requirements
 
-- Python >=3.10
+- Python >=3.12
 - [Astral UV](https://docs.astral.sh/uv) >=0.3.3
 
 ## Installation

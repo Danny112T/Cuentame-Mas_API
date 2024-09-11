@@ -3,7 +3,7 @@ name = "app"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.112.2",
     "strawberry-graphql>=0.237.3",
@@ -17,6 +17,12 @@ dependencies = [
     "pydantic-settings>=2.4.0",
     "starlette>=0.38.2",
     "email-validator>=2.2.0",
+    "transformers>=4.44.2",
+    "pip>=24.2",
+    "torch",
+    "mlx>=0.17.2",
+    "sentencepiece>=0.2.0",
+    "mlx-lm>=0.18.1",
 ]
 
 [build-system]
