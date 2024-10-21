@@ -1,7 +1,9 @@
-import strawberry
-from typing import Optional
 from datetime import datetime
-from app.models.message import Role
+from typing import Optional
+
+import strawberry
+
+from app.models.message import Rated, Role
 
 """
 Users Input
@@ -59,19 +61,66 @@ Chats Input
 @strawberry.input
 class CreateChatInput:
     title: str
+    iamodel_id: Optional[str] = None
+
 
 @strawberry.input
 class UpdateChatInput:
     id: str
-    title: str
+    title: Optional[str] = None
+    iamodel_id: Optional[str] = None
 
 
 """
 Messages Input
 """
 
+
 @strawberry.input
 class CreateMessageInput:
     chat_id: str
     content: str
     role: Role
+
+
+@strawberry.input
+class UpdateMessageInput:
+    user_message_id: Optional[str] = None
+    iamodel_message_id: Optional[str] = None
+    bookmark: Optional[bool] = None
+    rated: Optional[Rated] = None
+
+@strawberry.input
+class RegenerateMessageInput:
+    user_message_id: str
+    iamodel_message_id: str
+    content: str
+
+@strawberry.input
+class DeleteMessageInput:
+    user_message_id: str
+    iamodel_message_id: str
+
+
+"""
+IA Models Input
+"""
+
+
+@strawberry.input
+class RegisterIaModelInput:
+    name: str
+    algorithm: str
+    params: str
+    description: str
+    path: str
+
+
+@strawberry.input
+class UpdateIaModelInput:
+    id: str
+    name: str
+    algorithm: str
+    params: str
+    description: str
+    path: str

@@ -1,21 +1,25 @@
-from typing_extensions import Optional
+from typing import Optional
+
 import strawberry
 from bson import ObjectId
-from app.core.db import db
-from app.models.user import UserType
-from app.models.chat import ChatType
 from fastapi import HTTPException, status
-from app.models.message import MessageType
-from app.models.reminder import ReminderType
+
 from app.auth.JWTBearer import IsAuthenticated
-from app.graphql.types.paginationWindow import PaginationWindow
+from app.core.db import db
 from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
-from app.graphql.resolvers.users_resolver import getCurrentUser, get_pagination_window
+from app.graphql.resolvers.ia_resolver import get_models_pagination_window
+from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window
 from app.graphql.resolvers.reminders_resolver import (
     get_reminders_pagination_window,
     getReminder,
 )
-from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window
+from app.graphql.resolvers.users_resolver import get_pagination_window, getCurrentUser
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.chat import ChatType
+from app.models.ia_model import IamodelType
+from app.models.message import MessageType
+from app.models.reminder import ReminderType
+from app.models.user import UserType
 
 
 @strawberry.type
@@ -110,8 +114,8 @@ class Query:
         info,
         order_by: str,
         limit: int,
-        offset: int = 0,
-        desc: bool = False,
+        offset: Optional[int] = 0,
+        desc: Optional[bool] = False,
     ) -> PaginationWindow[ChatType]:
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await get_chats_pagination_window(
@@ -125,7 +129,8 @@ class Query:
         )
 
     @strawberry.field(
-        description="Get a list of messages by chat", permission_classes=[IsAuthenticated]
+        description="Get a list of messages by chat",
+        permission_classes=[IsAuthenticated],
     )
     async def getAllMessages(
         self,
@@ -133,8 +138,8 @@ class Query:
         order_by: str,
         limit: int,
         chat_id: str,
-        offset: int = 0,
-        desc: bool = True,
+        offset: Optional[int] = 0,
+        desc: Optional[bool] = False,
     ) -> PaginationWindow[MessageType]:
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await get_msgs_pagination_window(
@@ -146,4 +151,21 @@ class Query:
             desc=desc,
             token=token,
             chat_id=chat_id,
+        )
+
+    @strawberry.field(description="Get a list of IA models")
+    async def getAllIaModels(
+        self,
+        order_by: str,
+        limit: int,
+        offset: int = 0,
+        desc: bool = False,
+    ) -> PaginationWindow[IamodelType]:
+        return await get_models_pagination_window(
+            dataset="models",
+            ItemType=IamodelType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
         )
