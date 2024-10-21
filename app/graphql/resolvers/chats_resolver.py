@@ -1,29 +1,51 @@
-from app.graphql.types.paginationWindow import PaginationWindow
-from app.graphql.schemas.input_schema import CreateChatInput, UpdateChatInput
-from app.auth.JWTManager import JWTManager
-from pymongo import DESCENDING, ASCENDING
-from fastapi import HTTPException, status
-from app.models.chat import ChatType
-from app.core.db import db
 from datetime import datetime
+
 from bson import ObjectId
+from fastapi import HTTPException, status
+from pymongo import ASCENDING, DESCENDING
+
+from app.auth.JWTManager import JWTManager
+from app.core.db import db
+from app.graphql.schemas.input_schema import CreateChatInput, UpdateChatInput
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.chat import ChatType
+from app.models.message import MessageType
 
 
 def makeChatDict(input: CreateChatInput) -> dict:
     return {
         "title": input.title,
+        "iamodel_id": input.iamodel_id,
         "created_at": datetime.now(),
         "updated_at": None,
     }
 
-def updateChatDict(input: CreateChatInput) -> dict:
-    return {
-        "title": input.title,
-        "updated_at": datetime.now(),
-    }
+
+def updateChatDict(input: UpdateChatInput) -> dict:
+    chat = db["chats"].find_one({"_id": ObjectId(input.id)})
+    if (input.title is not None) and (input.iamodel_id is not None):
+        return {
+            "title": input.title,
+            "iamodel_id": input.iamodel_id,
+            "updated_at": datetime.now(),
+        }
+    elif (input.title is not None) and (input.iamodel_id is None):
+        return {
+            "title": input.title,
+            "iamodel_id": chat.get("iamodel_id"),
+            "updated_at": datetime.now(),
+        }
+    elif (input.title is None) and (input.iamodel_id is not None):
+        return {
+            "title": chat.get("title"),
+            "iamodel_id": input.iamodel_id,
+            "updated_at": datetime.now(),
+        }
+    else:
+        return {}
 
 
-async def createChat(input: CreateChatInput, token: str) -> ChatType:
+async def create_chat(input: CreateChatInput, token: str) -> ChatType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -33,6 +55,9 @@ async def createChat(input: CreateChatInput, token: str) -> ChatType:
         )
 
     chat_dict = makeChatDict(input)
+
+    if input.iamodel_id is not None:
+        chat_dict["iamodel_id"] = "66f37d8bb38ac24ead72721e"
 
     chat_dict["user_id"] = user_info["sub"]
 
@@ -69,8 +94,8 @@ async def get_chats_pagination_window(
     ItemType: type,
     order_by: str,
     limit: int,
-    offset: int = 0,
-    desc: bool = False,
+    offset: int,
+    desc: bool,
 ) -> PaginationWindow:
     """
     Get one pagination window on the given dataset for the given limit
@@ -93,6 +118,14 @@ async def get_chats_pagination_window(
 
     for x in db[dataset].find({"user_id": user_info["sub"]}).sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
+        messages = []
+        for message in (
+            db["messages"].find({"chat_id": x["id"]}).sort("created_at", ASCENDING)
+        ):
+            message["id"] = str(message.pop("_id"))
+            messages.append(message)
+
+        x["messages"] = [MessageType(**message) for message in messages]
         data.append(ItemType(**x))
 
     total_items_count = db[dataset].count_documents({"user_id": user_info["sub"]})
@@ -107,7 +140,7 @@ async def get_chats_pagination_window(
     return PaginationWindow(items=data, total_items_count=total_items_count)
 
 
-async def updateChat(input: UpdateChatInput, token: str) -> ChatType:
+async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -131,6 +164,10 @@ async def updateChat(input: UpdateChatInput, token: str) -> ChatType:
 
     chat_dict = updateChatDict(input)
 
+    if chat_dict is None:
+        chat_dict["iamodel_id"] = chat.get("iamodel_id")
+        chat_dict["title"] = chat.get("title")
+
     update_result = db["chats"].update_one(
         {"_id": ObjectId(input.id)},
         {"$set": chat_dict},
@@ -148,7 +185,7 @@ async def updateChat(input: UpdateChatInput, token: str) -> ChatType:
         )
 
 
-async def deleteChat(id: str, token: str) -> ChatType:
+async def delete_chat(id: str, token: str) -> ChatType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
