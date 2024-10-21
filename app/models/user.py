@@ -1,15 +1,17 @@
-import strawberry
+from datetime import datetime
 from enum import Enum
 from typing import List
-from datetime import datetime
+
+import strawberry
 from pydantic import BaseModel, Field
-from app.models.reminder import ReminderType
+
 from app.models.chat import ChatType
+from app.models.reminder import ReminderType
 
 
 @strawberry.enum
 class RegimenFiscal(Enum):
-    NO_DEFINIDO: str = "NoDefinido"
+    NO_DEFINIDO = "NoDefinido"
 
 
 class User(BaseModel):
@@ -17,7 +19,7 @@ class User(BaseModel):
     name: str
     lastname: str
     email: str
-    regimenFiscal: RegimenFiscal = RegimenFiscal.NO_DEFINIDO.value
+    regimenFiscal: str = RegimenFiscal.NO_DEFINIDO.value
     password: str
     created_at: datetime
     updated_at: datetime | None = None

@@ -1,8 +1,10 @@
 import typing
-from strawberry.types import Info
-from strawberry.permission import BasePermission
-from app.graphql.resolvers.users_resolver import getCurrentUser
+
 from fastapi import HTTPException, status
+from strawberry.permission import BasePermission
+from strawberry.types import Info
+
+from app.graphql.resolvers.users_resolver import getCurrentUser
 
 
 class IsAuthenticated(BasePermission):

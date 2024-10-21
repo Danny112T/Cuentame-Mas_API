@@ -1,22 +1,29 @@
-from jose import jwt
-from pymongo import DESCENDING, ASCENDING
 from datetime import datetime, timedelta
-from bson import ObjectId
-from fastapi import HTTPException, status
 from re import fullmatch
+
+from bson import ObjectId
+from email_validator import EmailNotValidError, validate_email
+from fastapi import HTTPException, status
+from jose import jwt
+from pymongo import ASCENDING, DESCENDING
+
+from app.auth.JWTManager import JWTManager
+from app.core.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    EMAIL_VAL,
+    JWT_SECRET,
+)
 from app.core.db import db
-from app.models.user import UserType, TokenType, RegimenFiscal
-from app.graphql.types.paginationWindow import PaginationWindow
-from app.models.reminder import ReminderType
-from app.models.chat import ChatType
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM, EMAIL_VAL
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
     loginInput,
 )
-from app.auth.JWTManager import JWTManager
-from email_validator import validate_email, EmailNotValidError
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.chat import ChatType
+from app.models.reminder import ReminderType
+from app.models.user import RegimenFiscal, TokenType, UserType
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
@@ -41,7 +48,7 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
     }
 
 
-async def createUser(input: CreateUserInput) -> UserType:
+async def create_user(input: CreateUserInput) -> UserType:
     if db["users"].find_one({"email": input.email}) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
@@ -50,10 +57,7 @@ async def createUser(input: CreateUserInput) -> UserType:
     try:
         email_info = validate_email(input.email, check_deliverability=EMAIL_VAL)
     except EmailNotValidError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=e
-        )
-
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e)
 
     if not fullmatch(REGEX, input.password):
         raise HTTPException(
@@ -85,7 +89,7 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
 
-async def updateUser(input: UpdateUserInput, token: str) -> UserType:
+async def update_user(input: UpdateUserInput, token: str) -> UserType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -131,7 +135,7 @@ async def updateUser(input: UpdateUserInput, token: str) -> UserType:
     return UserType(**updated_user)
 
 
-async def deleteUser(email: str, token: str) -> UserType:
+async def delete_user(email: str, token: str) -> UserType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -191,8 +195,8 @@ async def get_pagination_window(
             reminders.append(reminder)
 
         for chat in db["chats"].find({"user_id": str(x["id"])}):
-                chat["id"] = str(chat.pop("_id"))
-                chats.append(chat)
+            chat["id"] = str(chat.pop("_id"))
+            chats.append(chat)
 
         x["reminders"] = [ReminderType(**reminder) for reminder in reminders]
         x["chats"] = [ChatType(**chat) for chat in chats]
@@ -229,8 +233,8 @@ def getCurrentUser(token: str) -> UserType | None:
         reminders.append(reminder)
 
     for chat in db["chats"].find({"user_id": str(user["id"])}):
-            chat["id"] = str(chat.pop("_id"))
-            chats.append(chat)
+        chat["id"] = str(chat.pop("_id"))
+        chats.append(chat)
 
     user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
     user["chats"] = [ChatType(**chat) for chat in chats]

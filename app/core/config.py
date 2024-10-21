@@ -11,8 +11,8 @@ MONGO_DB = config("DB_DATABASE", default="cuentamemas")
 
 MONGO_URI = config("DB_URI", default=f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}")
 
-JWT_SECRET:str = str(config("JWT_SECRET", cast=Secret))
-ALGORITHM:str = str(config("ALGORITHM", default="HS256"))
+JWT_SECRET: str = str(config("JWT_SECRET", cast=Secret))
+ALGORITHM: str = str(config("ALGORITHM", default="HS256"))
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
     config("ACCESS_TOKEN_EXPIRE_MINUTES", default="15000")
 )

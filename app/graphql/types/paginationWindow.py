@@ -1,5 +1,6 @@
+from typing import Generic, List, TypeVar
+
 import strawberry
-from typing import List, Generic, TypeVar
 
 Item = TypeVar("Item")
 

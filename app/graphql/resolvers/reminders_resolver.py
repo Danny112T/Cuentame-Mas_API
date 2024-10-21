@@ -1,12 +1,14 @@
-from bson import ObjectId
 from datetime import datetime
-from app.core.db import db
+
+from bson import ObjectId
 from fastapi import HTTPException, status
-from pymongo import DESCENDING, ASCENDING
+from pymongo import ASCENDING, DESCENDING
+
 from app.auth.JWTManager import JWTManager
-from app.models.reminder import ReminderType
-from app.graphql.types.paginationWindow import PaginationWindow
+from app.core.db import db
 from app.graphql.schemas.input_schema import CreateReminderInput, UpdateReminderInput
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.reminder import ReminderType
 
 
 def makeReminderDict(input: CreateReminderInput) -> dict:
@@ -28,7 +30,7 @@ def makeUpdateReminderDict(input: UpdateReminderInput) -> dict:
     }
 
 
-async def createReminder(input: CreateReminderInput, token: str) -> ReminderType:
+async def create_reminder(input: CreateReminderInput, token: str) -> ReminderType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -143,7 +145,7 @@ async def getReminder(id: str, token: str) -> ReminderType:
     return ReminderType(**reminder)
 
 
-async def updateReminder(input: UpdateReminderInput, token: str) -> ReminderType:
+async def update_reminder(input: UpdateReminderInput, token: str) -> ReminderType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -185,14 +187,14 @@ async def updateReminder(input: UpdateReminderInput, token: str) -> ReminderType
         updated_reminder = db["reminders"].find_one({"_id": ObjectId(input.id)})
         updated_reminder["id"] = str(updated_reminder.pop("_id"))
         return ReminderType(**updated_reminder)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update reminder",
-        )
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to update reminder",
+    )
 
 
-async def deleteReminder(id: str, token: str) -> ReminderType:
+async def delete_reminder(id: str, token: str) -> ReminderType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(

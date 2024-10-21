@@ -1,11 +1,12 @@
 import strawberry
+from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 from strawberry.schema.config import StrawberryConfig
+
 from app.graphql.schemas.mutation_schema import Mutation
 from app.graphql.schemas.query_schema import Query
-from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 schema = strawberry.Schema(

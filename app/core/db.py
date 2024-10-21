@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+
 from app.core.config import MONGO_DB, MONGO_URI
 
 name_db = MONGO_DB
