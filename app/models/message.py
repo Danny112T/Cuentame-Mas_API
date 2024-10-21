@@ -1,20 +1,21 @@
-import strawberry
 from datetime import datetime
-from pydantic import BaseModel, Field
 from enum import Enum
+
+import strawberry
+from pydantic import BaseModel, Field
 
 
 @strawberry.enum
 class Rated(Enum):
-    EMPTY: str = "Empty"
-    BAD: str = "Bad"
+    EMPTY = "Empty"
+    BAD = "Bad"
     GOOD: str = "Good"
 
 
 @strawberry.enum
 class Role(Enum):
-    IA: str = "assistant"
-    USER: str = "user"
+    IA = "assistant"
+    USER = "user"
 
 
 class Message(BaseModel):
@@ -22,7 +23,6 @@ class Message(BaseModel):
     chat_id: str
     role: Role = Role.USER.value
     content: str
-    iamodel_id: str | None = None
     bookmark: bool = False
     rated: Rated = Rated.EMPTY.value
     created_at: datetime
@@ -36,7 +36,6 @@ class Message(BaseModel):
 class MessageType:
     id: strawberry.ID
     chat_id: str
-    iamodel_id: str | None
     role: Role
     content: str
     bookmark: bool
