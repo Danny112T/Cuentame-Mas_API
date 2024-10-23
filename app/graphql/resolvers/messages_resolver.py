@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from bson import ObjectId
@@ -65,20 +66,33 @@ async def get_msgs_pagination_window(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if user_info["sub"] != db["chats"].find_one({"_id":ObjectId(chat_id)}).get("user_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to see this mesages",
+        )
+
     data = []
     order_type = DESCENDING if desc else ASCENDING
     if limit <= 0 or limit > 100:
-        raise Exception(f"limit ({limit}) must be between 0-100")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
+
+    total_items_count = db[dataset].count_documents({"chat_id": chat_id})
+    if total_items_count == 0:
+        return PaginationWindow(items=data, total_items_count=total_items_count)
 
     for x in db[dataset].find({"chat_id": chat_id}).sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
         data.append(ItemType(**x))
 
-    total_items_count = db[dataset].count_documents({"chat_id": chat_id})
 
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
-        raise Exception(
-            f"offset ({offset}) is out of range " f"(0-{total_items_count - 1})"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -111,33 +125,32 @@ async def create_message(
         message = db["messages"].find_one({"_id": message.inserted_id})
         ia_message = db["messages"].find_one({"_id": ia_message.inserted_id})
         if (message is not None) or (ia_message is not None):
-            updated_result = db["chats"].update_one(
+            updated_result1 = db["chats"].update_one(
                 {"_id": ObjectId(input.chat_id)},
                 {
                     "$push": {
-                        "messages": str(message["_id"]),
-                        "messages": str(ia_message["_id"]),
+                        "messages": {"$each": [str(message["_id"]), str(ia_message["_id"])]},
                     },
                     "$set": {
                         "updated_at": datetime.now(),
                     },
                 },
             )
-        if updated_result.modified_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update chat with the messages",
-            )
-        message["id"] = str(message.pop("_id"))
-        ia_message["id"] = str(ia_message.pop("_id"))
+        if updated_result1.modified_count == 1:
+            message["id"] = str(message.pop("_id"))
+            ia_message["id"] = str(ia_message.pop("_id"))
 
-        return MessageType(**message), MessageType(**ia_message)
+            return MessageType(**message), MessageType(**ia_message)
 
-    else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send message",
+            detail="Failed to update chat with the messages",
         )
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to send message",
+    )
 
 
 async def delete_message(input: DeleteMessageInput, token: str) -> tuple[MessageType, MessageType]:
