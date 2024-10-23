@@ -12,7 +12,7 @@ from app.models.chat import ChatType
 from app.models.message import MessageType
 
 
-def makeChatDict(input: CreateChatInput) -> dict:
+def make_chat_dict(input: CreateChatInput) -> dict:
     return {
         "title": input.title,
         "iamodel_id": input.iamodel_id,
@@ -21,7 +21,7 @@ def makeChatDict(input: CreateChatInput) -> dict:
     }
 
 
-def updateChatDict(input: UpdateChatInput) -> dict:
+def update_chat_dict(input: UpdateChatInput) -> dict:
     chat = db["chats"].find_one({"_id": ObjectId(input.id)})
     if (input.title is not None) and (input.iamodel_id is not None):
         return {
@@ -54,7 +54,7 @@ async def create_chat(input: CreateChatInput, token: str) -> ChatType:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    chat_dict = makeChatDict(input)
+    chat_dict = make_chat_dict(input)
 
     if input.iamodel_id is not None:
         chat_dict["iamodel_id"] = "66f37d8bb38ac24ead72721e"
@@ -114,7 +114,10 @@ async def get_chats_pagination_window(
     data = []
     order_type = DESCENDING if desc else ASCENDING
     if limit <= 0 or limit > 100:
-        raise Exception(f"limit ({limit}) must be between 0-100")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
 
     for x in db[dataset].find({"user_id": user_info["sub"]}).sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
@@ -131,10 +134,10 @@ async def get_chats_pagination_window(
     total_items_count = db[dataset].count_documents({"user_id": user_info["sub"]})
 
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
-        raise Exception(
-            f"offset ({offset}) is out of range " f"(0-{total_items_count - 1})"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
         )
-
     data = data[offset : offset + limit]
 
     return PaginationWindow(items=data, total_items_count=total_items_count)
@@ -162,7 +165,7 @@ async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
             detail="You are not authorized to update this chat",
         )
 
-    chat_dict = updateChatDict(input)
+    chat_dict = update_chat_dict(input)
 
     if chat_dict is None:
         chat_dict["iamodel_id"] = chat.get("iamodel_id")
@@ -178,11 +181,11 @@ async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
         updated_chat = db["chats"].find_one({"_id": ObjectId(input.id)})
         updated_chat["id"] = str(updated_chat.pop("_id"))
         return ChatType(**updated_chat)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update chat",
-        )
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to update chat",
+    )
 
 
 async def delete_chat(id: str, token: str) -> ChatType:
@@ -195,6 +198,11 @@ async def delete_chat(id: str, token: str) -> ChatType:
         )
 
     chat = db["chats"].find_one({"_id": ObjectId(id)})
+    messages_data = []
+    for messages in db["messages"].find({"chat_id": id}):
+        messages["id"] = str(messages.pop("_id"))
+        messages_data.append(messages)
+
     if chat is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -207,13 +215,22 @@ async def delete_chat(id: str, token: str) -> ChatType:
             detail="You are not authorized to delete this chat",
         )
 
-    delete_result = db["chats"].delete_one({"_id": ObjectId(id)})
-
-    if delete_result.deleted_count == 1:
-        chat["id"] = str(chat.pop("_id"))
-        return ChatType(**chat)
-    else:
+    total_messages = db["messages"].count_documents({"chat_id":id})
+    if total_messages != len(messages_data):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete chat",
+            detail="Failed to retrieve messages from chat",
         )
+
+    deleted_messages_result = db["messages"].delete_many({"chat_id":id})
+    delete_result = db["chats"].delete_one({"_id": ObjectId(id)})
+
+    if delete_result.deleted_count == 1 and deleted_messages_result.deleted_count == total_messages:
+        chat["id"] = str(chat.pop("_id"))
+        chat["messages"] = [MessageType(**message) for message in messages_data]
+        return ChatType(**chat)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to delete chat",
+    )
