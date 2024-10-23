@@ -97,7 +97,10 @@ async def get_reminders_pagination_window(
     order_type = ASCENDING
 
     if limit <= 0 or limit > 100:
-        raise Exception(f"limit ({limit}) must be between 0-100")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
 
     if desc:
         order_type = DESCENDING
@@ -111,8 +114,9 @@ async def get_reminders_pagination_window(
     total_items_count = db[dataset].count_documents({"user_id": user_info["sub"]})
 
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
-        raise Exception(
-            f"offset ({offset}) is out of range " f"(0-{total_items_count - 1})"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]

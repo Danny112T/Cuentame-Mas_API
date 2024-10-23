@@ -72,7 +72,10 @@ async def get_models_pagination_window(
     data = []
     order_type = ASCENDING
     if limit <= 0 or limit > 100:
-        raise Exception(f"limit ({limit}) must be between 0-100")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
 
     if order_by is None:
         order_by = "name"
