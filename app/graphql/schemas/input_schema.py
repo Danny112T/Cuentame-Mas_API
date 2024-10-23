@@ -119,8 +119,12 @@ class RegisterIaModelInput:
 @strawberry.input
 class UpdateIaModelInput:
     id: str
-    name: str
-    algorithm: str
-    params: str
-    description: str
-    path: str
+    name: Optional[str] = None
+    algorithm: Optional[str] = None
+    params: Optional[str] = None
+    description: Optional[str] = None
+    path: Optional[str] = None
+
+@strawberry.input
+class DeleteIaModelInput:
+    id: str

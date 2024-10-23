@@ -337,3 +337,48 @@ class Mutation:
 
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await ia.register_ia_model(input, token)
+
+    @strawberry.mutation(
+        description="Update a IA model chat into the sistem",
+        permission_classes=[IsAuthenticated],
+    )
+    async def update_ia_model(self, input: ins.UpdateIaModelInput, info) -> IamodelType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        if (
+            info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await ia.update_ia_model(input, token)
+
+    @strawberry.mutation(
+        description="Delete a IA model chat into the sistem",
+        permission_classes=[IsAuthenticated],
+    )
+    async def delete_ia_model(self, input: ins.DeleteIaModelInput, info) -> IamodelType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        if (
+            info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await ia.delete_ia_model(input, token)

@@ -5,7 +5,7 @@ from pymongo import ASCENDING, DESCENDING
 
 from app.auth.JWTManager import JWTManager
 from app.core.db import db
-from app.graphql.schemas.input_schema import RegisterIaModelInput
+from app.graphql.schemas.input_schema import DeleteIaModelInput, RegisterIaModelInput
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.ia_model import IamodelType
 
@@ -19,6 +19,14 @@ def make_ia_model_dict(input: RegisterIaModelInput) -> dict:
         "path": input.path,
     }
 
+def update_ia_model_dict(input: RegisterIaModelInput, iamodel) -> dict:
+    return {
+        "name": input.name if input.name is not None else iamodel["name"],
+        "algorithm": input.algorithm if input.algorithm is not None else iamodel["algorithm"],
+        "params": input.params if input.params is not None else iamodel["params"],
+        "description": input.description if input.description is not None else iamodel["description"],
+        "path": input.path if input.path is not None else iamodel["path"],
+    }
 
 # Register Model
 async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
@@ -50,10 +58,64 @@ async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
 
 
 # Update Model
+async def update_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    iamodel = db["models"].find_one({"_id": ObjectId(input.id)})
+    if iamodel is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Model not found",
+        )
+
+    iamodeldict = update_ia_model_dict(input, iamodel)
+
+    updated_result = db["models"].update_one(
+        {"_id": ObjectId(input.id)}, {"$set": iamodeldict},
+        upsert=False,
+    )
+
+    if updated_result.matched_count == 1:
+        updated_model = db["models"].find_one({"_id": ObjectId(input.id)})
+        updated_model["id"] = str(updated_model.pop("_id"))
+        return IamodelType(**updated_model)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to update model",
+    )
 
 
 # Delete Model
+async def delete_ia_model(input: DeleteIaModelInput, token) -> IamodelType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+    model = db["models"].find_one({"_id": ObjectId(input.id)})
+    if model is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Model not found",
+        )
 
+    deleted_model = db["models"].delete_one({"_id": ObjectId(input.id)})
+
+    if deleted_model.deleted_count == 1:
+        model["id"] = str(model.pop("_id"))
+        return IamodelType(**model)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to delete model",
+    )
 
 # Get all models
 async def get_models_pagination_window(
