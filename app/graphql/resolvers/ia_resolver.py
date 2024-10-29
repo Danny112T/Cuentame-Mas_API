@@ -170,22 +170,30 @@ def generate_response(
             detail="Model not found",
         )
 
-    path = db_ia_model.get("path")
-    model, tokenizer = load(path)
+    algorithm = db_ia_model.get("algorithm")
 
-    conversation = list(
-        db["messages"].find({"chat_id": chat_id}).sort("created_at", DESCENDING)
+    if algorithm == "MLX":
+        path = db_ia_model.get("path")
+        model, tokenizer = load(path)
+
+        conversation = list(
+            db["messages"].find({"chat_id": chat_id}).sort("created_at", DESCENDING)
+        )
+        messages = []
+        if len(conversation) == 0:
+            messages.append({"role": "user", "content": content})
+        else:
+            for message in conversation:
+                messages.append({"role": message["role"], "content": message["content"]})
+            messages.append({"role": "user", "content": content})
+
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+
+        return generate(model, tokenizer, prompt, max_tokens=max_length)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Another algorithm is not implemented yet",
     )
-    messages = []
-    if len(conversation) == 0:
-        messages.append({"role": "user", "content": content})
-    else:
-        for message in conversation:
-            messages.append({"role": message["role"], "content": message["content"]})
-        messages.append({"role": "user", "content": content})
-
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-
-    return generate(model, tokenizer, prompt, max_tokens=max_length)
