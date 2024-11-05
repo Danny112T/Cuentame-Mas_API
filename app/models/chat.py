@@ -1,13 +1,16 @@
-import strawberry
-from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List
+
+import strawberry
+from pydantic import BaseModel, Field
+
 from app.models.message import MessageType
 
 
 class Chat(BaseModel):
     id: str = Field(None, alias="_id")
     user_id: str
+    iamodel_id: str | None = None
     title: str
     created_at: datetime
     updated_at: datetime | None = None
@@ -21,6 +24,7 @@ class Chat(BaseModel):
 class ChatType:
     id: strawberry.ID
     user_id: str
+    iamodel_id: str | None
     title: str
     created_at: str
     updated_at: str | None

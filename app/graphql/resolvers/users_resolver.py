@@ -1,21 +1,29 @@
-from jose import jwt
-from pymongo import DESCENDING, ASCENDING
 from datetime import datetime, timedelta
-from bson import ObjectId
-from fastapi import HTTPException, status
 from re import fullmatch
+
+from bson import ObjectId
+from email_validator import EmailNotValidError, validate_email
+from fastapi import HTTPException, status
+from jose import jwt
+from pymongo import ASCENDING, DESCENDING
+
+from app.auth.JWTManager import JWTManager
+from app.core.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    EMAIL_VAL,
+    JWT_SECRET,
+)
 from app.core.db import db
-from app.models.user import UserType, TokenType, RegimenFiscal
-from app.graphql.types.paginationWindow import PaginationWindow
-from app.models.reminder import ReminderType
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET, ALGORITHM
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
     loginInput,
 )
-from app.auth.JWTManager import JWTManager
-
+from app.graphql.types.paginationWindow import PaginationWindow
+from app.models.chat import ChatType
+from app.models.reminder import ReminderType
+from app.models.user import RegimenFiscal, TokenType, UserType
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
@@ -40,11 +48,16 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
     }
 
 
-async def createUser(input: CreateUserInput) -> UserType:
+async def create_user(input: CreateUserInput) -> UserType:
     if db["users"].find_one({"email": input.email}) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
         )
+
+    try:
+        email_info = validate_email(input.email, check_deliverability=EMAIL_VAL)
+    except EmailNotValidError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e)
 
     if not fullmatch(REGEX, input.password):
         raise HTTPException(
@@ -53,7 +66,7 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
     user_dict = makeCreateUserDict(input)
-
+    user_dict["email"] = email_info.normalized
     user_dict["password"] = JWTManager.hashPassword(input.password)
     user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
     user_dict["reminders"] = []
@@ -76,7 +89,7 @@ async def createUser(input: CreateUserInput) -> UserType:
         )
 
 
-async def updateUser(input: UpdateUserInput, token: str) -> UserType:
+async def update_user(input: UpdateUserInput, token: str) -> UserType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -122,7 +135,7 @@ async def updateUser(input: UpdateUserInput, token: str) -> UserType:
     return UserType(**updated_user)
 
 
-async def deleteUser(email: str, token: str) -> UserType:
+async def delete_user(email: str, token: str) -> UserType:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
         raise HTTPException(
@@ -165,26 +178,39 @@ async def get_pagination_window(
     order_type = ASCENDING
 
     if limit <= 0 or limit > 100:
-        raise Exception(f"limit ({limit}) must be between 0-100")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
 
     if order_by is None:
         order_by = "created_at"
 
     order_type = DESCENDING if desc else ASCENDING
 
-    print(dataset)
-    print(db[dataset].find())
-    print(db)
-
     for x in db[dataset].find().sort(order_by, order_type):
         x["id"] = str(x.pop("_id"))
+        user_reminders = db["reminders"].find({"user_id": str(x["id"])})
+        reminders = []
+        chats = []
+        for reminder in user_reminders:
+            reminder["id"] = str(reminder.pop("_id"))
+            reminders.append(reminder)
+
+        for chat in db["chats"].find({"user_id": str(x["id"])}):
+            chat["id"] = str(chat.pop("_id"))
+            chats.append(chat)
+
+        x["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+        x["chats"] = [ChatType(**chat) for chat in chats]
         data.append(ItemType(**x))
 
     total_items_count = db[dataset].count_documents({})
 
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
-        raise Exception(
-            f"offset ({offset}) is out of range " f"(0-{total_items_count - 1})"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -205,11 +231,17 @@ def getCurrentUser(token: str) -> UserType | None:
     user["id"] = str(user.pop("_id"))
     user_reminders = db["reminders"].find({"user_id": str(user["id"])})
     reminders = []
+    chats = []
     for reminder in user_reminders:
         reminder["id"] = str(reminder.pop("_id"))
         reminders.append(reminder)
 
+    for chat in db["chats"].find({"user_id": str(user["id"])}):
+        chat["id"] = str(chat.pop("_id"))
+        chats.append(chat)
+
     user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
+    user["chats"] = [ChatType(**chat) for chat in chats]
 
     return UserType(**user)
 

@@ -1,13 +1,22 @@
-from jose import jwt
 from datetime import datetime
+
+from bcrypt import checkpw, gensalt, hashpw
 from fastapi import HTTPException, status
-from bcrypt import hashpw, gensalt, checkpw
-from app.core.config import JWT_SECRET, ALGORITHM
+from jose import jwt
+
+from app.core.config import ALGORITHM, JWT_SECRET
+
 
 class JWTManager:
+    def __init__(self):
+        pass
+
+    @staticmethod
     def verify_jwt(token: str):
         try:
-            decode_token = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+            decode_token = jwt.decode(
+                token=token, key=JWT_SECRET, algorithms=[ALGORITHM]
+            )
             current_timestamp = datetime.now().timestamp()
             if decode_token is None:
                 raise HTTPException(
@@ -25,11 +34,12 @@ class JWTManager:
         except ValueError:
             return False
 
+    @staticmethod
     def hashPassword(password: str) -> str:
         passW = password.encode("utf-8")
         return hashpw(passW, gensalt()).decode("utf-8")
 
+    @staticmethod
     def checkPassword(password: str, hashed: str) -> bool:
         passW = password.encode("utf-8")
-        hashed = hashed.encode("utf-8")
-        return checkpw(passW, hashed)
+        return checkpw(password=passW, hashed_password=hashed.encode("utf-8"))
