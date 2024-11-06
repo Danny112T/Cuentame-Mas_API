@@ -56,7 +56,7 @@ async def create_chat(input: CreateChatInput, token: str) -> ChatType:
 
     chat_dict = make_chat_dict(input)
 
-    if input.iamodel_id is not None:
+    if input.iamodel_id is None:
         chat_dict["iamodel_id"] = "66f37d8bb38ac24ead72721e"
 
     chat_dict["user_id"] = user_info["sub"]

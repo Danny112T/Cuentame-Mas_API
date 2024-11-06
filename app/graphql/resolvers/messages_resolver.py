@@ -192,7 +192,7 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
         )
 
     value = "bookmark" if input.bookmark is not None else "rated"
-    message_id = input.user_message_id or input.iamodel_message_id
+    message_id = input.user_message_id if input.user_message_id is not None else input.iamodel_message_id
     message = db["messages"].update_one(
         {"_id": ObjectId(message_id)},
         {"$set": {
@@ -205,7 +205,7 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
     if message.matched_count == 1:
         updated_message = db["messages"].find_one({"_id": ObjectId(message_id)})
         updated_message["id"] = str(updated_message.pop("_id"))
-        idchat = db["messages"].find_one({"_id":ObjectId(input.user_message_id)}).get("chat_id")
+        idchat = db["messages"].find_one({"_id":ObjectId(message_id)}).get("chat_id")
         db["chats"].update_one(
             {"_id":ObjectId(idchat)},
             {"$set": {"updated_at": datetime.now()}},
