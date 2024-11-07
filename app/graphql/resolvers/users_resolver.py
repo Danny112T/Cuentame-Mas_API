@@ -23,6 +23,7 @@ from app.graphql.schemas.input_schema import (
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.chat import ChatType
 from app.models.reminder import ReminderType
+from app.models.message import MessageType
 from app.models.user import RegimenFiscal, TokenType, UserType
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
@@ -239,6 +240,13 @@ def getCurrentUser(token: str) -> UserType | None:
     for chat in db["chats"].find({"user_id": str(user["id"])}):
         chat["id"] = str(chat.pop("_id"))
         chats.append(chat)
+
+    for x in chats:
+        messages = []
+        for message in db["messages"].find({"chat_id": x["id"]}).sort("created_at", ASCENDING):
+            message["id"] = str(message.pop("_id"))
+            messages.append(message)
+        x["messages"] = [MessageType(**message) for message in messages]
 
     user["reminders"] = [ReminderType(**reminder) for reminder in reminders]
     user["chats"] = [ChatType(**chat) for chat in chats]
