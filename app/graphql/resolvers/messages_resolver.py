@@ -100,6 +100,68 @@ async def get_msgs_pagination_window(
     return PaginationWindow(items=data, total_items_count=total_items_count)
 
 
+async def get_favs_msgs_pagination_window(
+    token: str,
+    dataset: str,
+    order_by: str,
+    limit: int,
+    offset: int,
+    desc: bool,
+    ItemType: type,
+) -> PaginationWindow:
+    """
+    Get one pagination window on the given dataset for the given limit
+    and offset, ordered by the given attribute and filtered using the
+    given filters
+    """
+
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = user_info["sub"]
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    data = []
+    order_type = DESCENDING if desc else ASCENDING
+    order_by = "created_at" if order_by is None else order_by
+
+    if limit <= 0 or limit > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
+
+
+    for x in db["chats"].find({"user_id": user_id}):
+        for y in db[dataset].find({"chat_id": str(x["_id"]), "bookmark":True}).sort(order_by, order_type):
+            y["id"] = str(y.pop("_id"))
+            data.append(ItemType(**y))
+
+
+    total_items_count = len(data)
+    if total_items_count == 0:
+        return PaginationWindow(items=data, total_items_count=total_items_count)
+
+    if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+        )
+
+    data = data[offset : offset + limit]
+
+    return PaginationWindow(items=data, total_items_count=total_items_count)
+
 async def create_message(
     input: CreateMessageInput, token: str
 ) -> tuple[MessageType, MessageType]:

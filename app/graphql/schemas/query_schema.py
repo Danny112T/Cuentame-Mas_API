@@ -8,7 +8,7 @@ from app.auth.JWTBearer import IsAuthenticated
 from app.core.db import db
 from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
 from app.graphql.resolvers.ia_resolver import get_models_pagination_window
-from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window
+from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window, get_favs_msgs_pagination_window
 from app.graphql.resolvers.reminders_resolver import (
     get_reminders_pagination_window,
     getReminder,
@@ -220,6 +220,36 @@ class Query:
             desc=desc,
             token=token,
             chat_id=chat_id,
+        )
+
+    @strawberry.field(description="Get a list of favorite messages")
+    async def get_all_favorite_messages(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        offset: int = 0,
+        desc: bool = True,
+    ) -> PaginationWindow[MessageType]:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+        if (info.context["request"].headers["Authorization"].split("Bearer ")[-1] is None):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await get_favs_msgs_pagination_window(
+            dataset="messages",
+            ItemType=MessageType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            token=token,
         )
 
     @strawberry.field(description="Get a list of IA models")
