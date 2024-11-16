@@ -4,6 +4,7 @@ from typing import Optional
 import strawberry
 
 from app.models.message import Rated, Role
+from app.models.user import RegimenFiscal
 
 """
 Users Input
@@ -23,7 +24,7 @@ class UpdateUserInput:
     email: Optional[str] = None
     name: Optional[str] = None
     lastname: Optional[str] = None
-    regimenFiscal: Optional[str] = None
+    regimenFiscal: Optional[RegimenFiscal] = None
     password: Optional[str] = None
 
 
@@ -90,11 +91,13 @@ class UpdateMessageInput:
     bookmark: Optional[bool] = None
     rated: Optional[Rated] = None
 
+
 @strawberry.input
 class RegenerateMessageInput:
     user_message_id: str
     iamodel_message_id: str
     content: str
+
 
 @strawberry.input
 class DeleteMessageInput:
@@ -124,6 +127,7 @@ class UpdateIaModelInput:
     params: Optional[str] = None
     description: Optional[str] = None
     path: Optional[str] = None
+
 
 @strawberry.input
 class DeleteIaModelInput:
