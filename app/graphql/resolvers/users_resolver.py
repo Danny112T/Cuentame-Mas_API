@@ -125,6 +125,9 @@ async def update_user(input: UpdateUserInput, token: str) -> UserType:
 
     if user_dict["regimenFiscal"] is None:
         user_dict["regimenFiscal"] = user["regimenFiscal"]
+    else:
+        if isinstance(user_dict["regimenFiscal"], RegimenFiscal):
+            user_dict["regimenFiscal"] = user_dict["regimenFiscal"].value
 
     update_result = db["users"].update_one(
         {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
@@ -243,7 +246,9 @@ def getCurrentUser(token: str) -> UserType | None:
 
     for x in chats:
         messages = []
-        for message in db["messages"].find({"chat_id": x["id"]}).sort("created_at", ASCENDING):
+        for message in (
+            db["messages"].find({"chat_id": x["id"]}).sort("created_at", ASCENDING)
+        ):
             message["id"] = str(message.pop("_id"))
             messages.append(message)
         x["messages"] = [MessageType(**message) for message in messages]
