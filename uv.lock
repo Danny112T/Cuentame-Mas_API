@@ -118,6 +118,7 @@ name = "app"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "accelerate" },
     { name = "bcrypt" },
     { name = "datasets" },
     { name = "email-validator" },
@@ -143,6 +144,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "accelerate", specifier = ">=1.1.1" },
     { name = "bcrypt", specifier = ">=4.2.0" },
     { name = "datasets", specifier = ">=3.1.0" },
     { name = "email-validator", specifier = ">=2.2.0" },
