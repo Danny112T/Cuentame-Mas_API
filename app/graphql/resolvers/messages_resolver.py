@@ -247,27 +247,35 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if input.rated is None and input.bookmark is None:
+    if input.message_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing required fields",
         )
 
-    value = "bookmark" if input.bookmark is not None else "rated"
-    message_id = input.user_message_id if input.user_message_id is not None else input.iamodel_message_id
+    message = db["messages"].find_one({"_id": ObjectId(input.message_id)})
+    if message is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message Not foud",
+        )
+    rated = input.rated.value if input.rated is not None else message.get("rated")
+    bookmark = input.bookmark if input.bookmark is not None else message.get("bookmark")
+
     message = db["messages"].update_one(
-        {"_id": ObjectId(message_id)},
+        {"_id": ObjectId(input.message_id)},
         {"$set": {
-            value: bool(input.bookmark) if input.bookmark is not None else input.rated.value,
+            "rated":rated,
+            "bookmark": bookmark,
             "updated_at": datetime.now()}
         },
         upsert= False,
     )
 
     if message.matched_count == 1:
-        updated_message = db["messages"].find_one({"_id": ObjectId(message_id)})
+        updated_message = db["messages"].find_one({"_id": ObjectId(input.message_id)})
         updated_message["id"] = str(updated_message.pop("_id"))
-        idchat = db["messages"].find_one({"_id":ObjectId(message_id)}).get("chat_id")
+        idchat = db["messages"].find_one({"_id":ObjectId(input.message_id)}).get("chat_id")
         db["chats"].update_one(
             {"_id":ObjectId(idchat)},
             {"$set": {"updated_at": datetime.now()}},
