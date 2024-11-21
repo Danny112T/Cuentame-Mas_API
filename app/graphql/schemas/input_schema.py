@@ -25,8 +25,8 @@ class UpdateUserInput:
     name: Optional[str] = None
     lastname: Optional[str] = None
     regimenFiscal: Optional[RegimenFiscal] = None
-    password: Optional[str] = None
-
+    old_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 @strawberry.input
 class loginInput:
@@ -86,8 +86,7 @@ class CreateMessageInput:
 
 @strawberry.input
 class UpdateMessageInput:
-    user_message_id: Optional[str] = None
-    iamodel_message_id: Optional[str] = None
+    message_id: str
     bookmark: Optional[bool] = None
     rated: Optional[Rated] = None
 

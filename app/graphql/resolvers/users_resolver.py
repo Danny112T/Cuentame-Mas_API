@@ -22,12 +22,19 @@ from app.graphql.schemas.input_schema import (
 )
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.chat import ChatType
-from app.models.reminder import ReminderType
 from app.models.message import MessageType
-from app.models.user import RegimenFiscal, TokenType, UserType
+from app.models.reminder import ReminderType
+from app.models.user import (
+    REGIMEN_FISCAL_DESCRIPTIONS,
+    RegimenFiscal,
+    TokenType,
+    UserType,
+)
 
 REGEX = r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?_])(?!\s)[a-zA-Z\d#$@!%&*?_]{6,}$"
 
+def get_regimen_fiscal_description(regimen: RegimenFiscal) -> str:
+    return REGIMEN_FISCAL_DESCRIPTIONS[regimen]
 
 def makeCreateUserDict(input: CreateUserInput) -> dict:
     return {
@@ -106,13 +113,27 @@ async def update_user(input: UpdateUserInput, token: str) -> UserType:
         )
 
     user_dict = makeUpdateUserDict(input)
-    if input.password:
-        if not fullmatch(REGEX, input.password):
+    if (input.old_password is not None) & (input.new_password is None):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The old password must be accompanied by the new password",
+        )
+    if input.new_password is not None:
+        if input.old_password is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The new password must be accompanied by the old password",
+            )
+        if not JWTManager.checkPassword(input.old_password, user["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect credentials"
+            )
+        if not fullmatch(REGEX, input.new_password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
             )
-        user_dict["password"] = JWTManager.hashPassword(input.password)
+        user_dict["password"] = JWTManager.hashPassword(input.new_password)
 
     if user_dict["name"] is None:
         user_dict["name"] = user["name"]
@@ -125,9 +146,9 @@ async def update_user(input: UpdateUserInput, token: str) -> UserType:
 
     if user_dict["regimenFiscal"] is None:
         user_dict["regimenFiscal"] = user["regimenFiscal"]
-    else:
-        if isinstance(user_dict["regimenFiscal"], RegimenFiscal):
-            user_dict["regimenFiscal"] = user_dict["regimenFiscal"].value
+
+    elif isinstance(user_dict["regimenFiscal"], RegimenFiscal):
+            user_dict["regimenFiscal"] = get_regimen_fiscal_description(user_dict["regimenFiscal"])
 
     update_result = db["users"].update_one(
         {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
