@@ -10,6 +10,7 @@ MONGO_PORT = config("MONGO_PORT", default="27017")
 MONGO_DB = config("DB_DATABASE", default="cuentamemas")
 
 MONGO_URI = config("DB_URI", default=f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}")
+# MONGO_URI = "mongodb+srv://iDannyT:dgrBNobBWy4vIXbR@clustersdmtp.g8faxeg.mongodb.net/?retryWrites=true&w=majority&appName=ClustersDMTP"
 
 JWT_SECRET: str = str(config("JWT_SECRET", cast=Secret))
 ALGORITHM: str = str(config("ALGORITHM", default="HS256"))

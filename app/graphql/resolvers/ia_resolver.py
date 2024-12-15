@@ -177,7 +177,7 @@ def generate_response(
         model, tokenizer = load(path)
 
         conversation = list(
-            db["messages"].find({"chat_id": chat_id}).sort("created_at", DESCENDING)
+            db["messages"].find({"chat_id": chat_id}).sort("created_at", ASCENDING)
         )
         messages = []
         if len(conversation) == 0:
