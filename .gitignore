@@ -163,3 +163,4 @@ cython_debug/
 original_models/**
 trained_models/**
 .vscode/**
+mlruns/**
