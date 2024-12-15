@@ -1,0 +1,7 @@
+artifact_location: mlflow-artifacts:/166770993333367624
+creation_time: 1733758840679
+experiment_id: '166770993333367624'
+last_update_time: 1733758877889
+lifecycle_stage: deleted
+name: finetuning_comparativa
+tags: {}

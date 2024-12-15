@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/971991357729505818/580dc9318bea40a4b72d27de53ae245c/artifacts
+end_time: 1733809995093
+entry_point_name: ''
+experiment_id: '971991357729505818'
+lifecycle_stage: active
+run_id: 580dc9318bea40a4b72d27de53ae245c
+run_name: MLX-Prueba 1.0
+run_uuid: 580dc9318bea40a4b72d27de53ae245c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1733804468403
+status: 3
+tags: []
+user_id: danny

@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/715046240608851114/929052852f894c1eac13f948ff4907a3/artifacts
+end_time: 1733857080313
+entry_point_name: ''
+experiment_id: '715046240608851114'
+lifecycle_stage: active
+run_id: 929052852f894c1eac13f948ff4907a3
+run_name: Axolotl1.0
+run_uuid: 929052852f894c1eac13f948ff4907a3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1733857073436
+status: 3
+tags: []
+user_id: root
