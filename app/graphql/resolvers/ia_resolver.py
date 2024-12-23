@@ -161,7 +161,7 @@ def generate_response(
     content: str, chat_id: str, model_id: str, max_length: int = 512
 ) -> tuple[str, str]:
     if model_id is None:
-        model_id = "66f37d8bb38ac24ead72721e"
+        model_id = "66ff79a6c3c7dfacdee54642"
 
     db_ia_model = db["models"].find_one({"_id": ObjectId(model_id)})
     if db_ia_model is None:
