@@ -1,4 +1,5 @@
 
+import uuid
 from datetime import datetime
 
 from bson import ObjectId
@@ -7,8 +8,10 @@ from pymongo import ASCENDING, DESCENDING
 
 from app.auth.JWTManager import JWTManager
 from app.core.db import db
+from app.graphql.resolvers.guest_resolver import validate_guest_session
 from app.graphql.resolvers.ia_resolver import generate_response
 from app.graphql.schemas.input_schema import (
+    CreateGuestMessageInput,
     CreateMessageInput,
     DeleteMessageInput,
     RegenerateMessageInput,
@@ -162,6 +165,7 @@ async def get_favs_msgs_pagination_window(
 
     return PaginationWindow(items=data, total_items_count=total_items_count)
 
+
 async def create_message(
     input: CreateMessageInput, token: str
 ) -> tuple[MessageType, MessageType]:
@@ -288,6 +292,7 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
         detail="Failed to update message",
     )
 
+
 async def regenerate_message(input: RegenerateMessageInput, token: str) -> tuple[MessageType, MessageType] | None:
     user_info = JWTManager.verify_jwt(token)
     if user_info is None:
@@ -330,3 +335,38 @@ async def regenerate_message(input: RegenerateMessageInput, token: str) -> tuple
     updated_ia["id"] = str(updated_ia.pop("_id"))
 
     return MessageType(**updated_usr), MessageType(**updated_ia)
+
+
+async def create_guest_message(input: CreateGuestMessageInput) -> tuple[MessageType,MessageType]:
+    if not await validate_guest_session(input.session_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session id",
+        )
+
+    model_id = "66ff79a6c3c7dfacdee54642"
+
+    ai_response = generate_response(input.content, input.chat_id, model_id)
+
+    create_guest_message = {
+        "session_id": input.session_id,
+        "content": input.content,
+        "created_at": datetime.now(),
+    }
+    db["guest_messages"].insert_one(create_guest_message)
+
+    user_message = MessageType(
+        id=str(uuid.uuid4()),
+        chat_id=input.chat_id,
+        role=input.role,
+        content=input.content,
+        created_at=datetime.now(),
+    )
+    ai_message = MessageType(
+        id=str(uuid.uuid4()),
+        chat_id=input.chat_id,
+        role=Role.IA,
+        content=ai_response,
+        created_at=datetime.now(),
+    )
+    return user_message, ai_message

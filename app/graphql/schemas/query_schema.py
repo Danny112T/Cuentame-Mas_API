@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 import strawberry
@@ -8,7 +9,10 @@ from app.auth.JWTBearer import IsAuthenticated
 from app.core.db import db
 from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
 from app.graphql.resolvers.ia_resolver import get_models_pagination_window
-from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window, get_favs_msgs_pagination_window
+from app.graphql.resolvers.messages_resolver import (
+    get_favs_msgs_pagination_window,
+    get_msgs_pagination_window,
+)
 from app.graphql.resolvers.reminders_resolver import (
     get_reminders_pagination_window,
     getReminder,
@@ -268,3 +272,18 @@ class Query:
             offset=offset,
             desc=desc,
         )
+
+    @strawberry.field(description="Get popular guest queries")
+    async def get_popular_queries(
+        self, days: int = 7, limit: int = 10
+    ) -> list[str]:
+        cutoff_date = datetime.now() - timedelta(days=days)
+        pipeline = [
+            {"$match": {"created_at": {"$gte": cutoff_date}}},
+            {"$group": {"_id": "$content", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
+        ]
+
+        results = list(db["guest_messages"].aggregate(pipeline))
+        return [r["_id"] for r in results]

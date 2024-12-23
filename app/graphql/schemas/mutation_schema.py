@@ -2,6 +2,7 @@ import strawberry
 from fastapi import HTTPException, status
 
 import app.graphql.resolvers.chats_resolver as cht
+import app.graphql.resolvers.guest_resolver as gs
 import app.graphql.resolvers.ia_resolver as ia
 import app.graphql.resolvers.messages_resolver as msj
 import app.graphql.resolvers.reminders_resolver as remind
@@ -9,6 +10,7 @@ import app.graphql.resolvers.users_resolver as usr
 import app.graphql.schemas.input_schema as ins
 from app.auth.JWTBearer import IsAuthenticated
 from app.models.chat import ChatType
+from app.models.guest_session import GuestSessionType
 from app.models.ia_model import IamodelType
 from app.models.message import MessageType
 from app.models.reminder import ReminderType
@@ -382,3 +384,15 @@ class Mutation:
             )
         token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
         return await ia.delete_ia_model(input, token)
+
+
+    """
+    Guest mutations
+    """
+    @strawberry.mutation(description="Create a guest session")
+    async def create_guest_session(self) -> GuestSessionType:
+        return await gs.create_guest_session()
+
+    @strawberry.mutation(description="Create message from a guest session")
+    async def create_guest_message(self, input: ins.CreateGuestMessageInput) -> tuple[MessageType, MessageType]:
+        return await msj.create_guest_message(input)

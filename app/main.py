@@ -7,6 +7,7 @@ from strawberry.schema.config import StrawberryConfig
 
 from app.graphql.schemas.mutation_schema import Mutation
 from app.graphql.schemas.query_schema import Query
+from app.jobs.scheduler import JobScheduler
 
 load_dotenv()
 schema = strawberry.Schema(
@@ -14,6 +15,18 @@ schema = strawberry.Schema(
 )
 
 app = FastAPI()
+scheduler = JobScheduler()
+
+@app.on_event("startup")
+async def start_scheduler() -> None:
+    try:
+        scheduler.start()
+    except Exception as e:
+        print(f"Failed to start scheduler: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_scheduler() -> None:
+    scheduler.scheduler.shutdown()
 
 app.add_middleware(
     CORSMiddleware,
