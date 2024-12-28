@@ -11,6 +11,7 @@ from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
 from app.graphql.resolvers.ia_resolver import get_models_pagination_window
 from app.graphql.resolvers.messages_resolver import (
     get_favs_msgs_pagination_window,
+    get_guest_msgs_pagination_window,
     get_msgs_pagination_window,
 )
 from app.graphql.resolvers.reminders_resolver import (
@@ -287,3 +288,46 @@ class Query:
 
         results = list(db["guest_messages"].aggregate(pipeline))
         return [r["_id"] for r in results]
+
+    @strawberry.field(description="Get messages from a chat (authenticated or guest)")
+    async def get_chat_messages(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        chat_id: str,
+        session_id: Optional[str] = None,  # Para invitados
+        offset: Optional[int] = 0,
+        desc: Optional[bool] = False,
+    ) -> PaginationWindow[MessageType]:
+        # Si hay token de autenticación, usar el método existente
+        if "Authorization" in info.context["request"].headers:
+            token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            return await get_msgs_pagination_window(
+                dataset="messages",
+                ItemType=MessageType,
+                order_by=order_by,
+                limit=limit,
+                offset=offset,
+                desc=desc,
+                token=token,
+                chat_id=chat_id,
+            )
+
+        # Si hay session_id, usar el método para invitados
+        return await get_guest_msgs_pagination_window(
+            dataset="messages",
+            ItemType=MessageType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            chat_id=chat_id,
+            session_id=session_id,
+        )
+
+        # Si no hay ni token ni session_id
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication or guest session required",
+        )

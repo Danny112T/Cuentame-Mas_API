@@ -26,7 +26,11 @@ async def start_scheduler() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_scheduler() -> None:
-    scheduler.scheduler.shutdown()
+    if scheduler.is_running:
+        try:
+            await scheduler.shutdown(wait=True)
+        except Exception as e:
+            print(f"Failed to shutdown scheduler: {e}")
 
 app.add_middleware(
     CORSMiddleware,

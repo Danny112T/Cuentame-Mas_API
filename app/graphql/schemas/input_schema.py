@@ -140,6 +140,5 @@ Guest Sessions Input
 @strawberry.input
 class CreateGuestMessageInput:
     session_id: str
-    chat_id: str
     content: str
     role: Role

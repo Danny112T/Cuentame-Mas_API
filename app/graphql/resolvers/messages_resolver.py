@@ -344,29 +344,136 @@ async def create_guest_message(input: CreateGuestMessageInput) -> tuple[MessageT
             detail="Invalid session id",
         )
 
-    model_id = "66ff79a6c3c7dfacdee54642"
+    chat_id = db["guest_sessions"].find_one({"session_id":input.session_id}).get("chat_id")
+    model_id = db["chats"].find_one({"_id":ObjectId(chat_id)}).get("iamodel_id")
+    ai_response = generate_response(input.content, chat_id, model_id)
 
-    ai_response = generate_response(input.content, input.chat_id, model_id)
-
-    create_guest_message = {
+    user_guest_message = {
         "session_id": input.session_id,
+        "chat_id": chat_id,
         "content": input.content,
+        "role": Role.USER.value,
         "created_at": datetime.now(),
     }
-    db["guest_messages"].insert_one(create_guest_message)
+    user_msg_result = db["guest_messages"].insert_one(user_guest_message)
+    ai_message = {
+        "session_id": input.session_id,
+        "chat_id": chat_id,
+        "content": ai_response,
+        "role": Role.IA.value,
+        "created_at": datetime.now(),
+    }
+    ai_msg_result = db["guest_messages"].insert_one(ai_message)
 
-    user_message = MessageType(
-        id=str(uuid.uuid4()),
-        chat_id=input.chat_id,
-        role=input.role,
-        content=input.content,
-        created_at=datetime.now(),
+    if user_msg_result.acknowledged and ai_msg_result.acknowledged:
+        db["chats"].update_one(
+            {"session_id": input.session_id},
+            {
+                "$push": {
+                    "messages": {
+                        "$each": [
+                            str(user_msg_result.inserted_id),
+                            str(ai_msg_result.inserted_id),
+                        ]
+                    },
+                },
+                "$set": {"updated_at": datetime.now()},
+            },
+        )
+        return (
+            MessageType(
+                id=str(user_msg_result.inserted_id),
+                chat_id=chat_id,
+                role=Role.USER,
+                content=input.content,
+                created_at=datetime.now(),
+            ),
+            MessageType(
+                id=str(ai_msg_result.inserted_id),
+                chat_id=chat_id,
+                role=Role.IA,
+                content=ai_response,
+                created_at=datetime.now(),
+            ),
+        )
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to create guest message",
     )
-    ai_message = MessageType(
-        id=str(uuid.uuid4()),
-        chat_id=input.chat_id,
-        role=Role.IA,
-        content=ai_response,
-        created_at=datetime.now(),
+
+async def get_guest_msgs_pagination_window(
+    dataset: str,
+    order_by: str,
+    limit: int,
+    offset: int,
+    chat_id: str,
+    session_id: str,
+    desc: bool,
+    ItemType: type,
+) -> PaginationWindow:
+    """
+    Get messages pagination window for guest sessions
+    """
+    # Validar la sesión del invitado
+    session = db["guest_sessions"].find_one({"session_id": session_id, "status": "ACTIVE"})
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid guest session",
+        )
+
+    # Verificar que el chat pertenece a la sesión
+    chat = db["chats"].find_one({"_id": ObjectId(chat_id)})
+    if not chat or chat.get("session_id") != session_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to see these messages",
+        )
+
+    data = []
+    order_type = DESCENDING if desc else ASCENDING
+
+    if limit <= 0 or limit > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"limit ({limit}) must be between 0-100",
+        )
+
+    # Usar un diccionario para mantener mensajes únicos
+    unique_messages = {}
+
+    # Obtener mensajes de la colección regular
+    for msg in db[dataset].find({"chat_id": chat_id}):
+        msg_id = str(msg["_id"])
+        msg["id"] = msg_id
+        unique_messages[msg_id] = msg
+
+    # Obtener mensajes de guest_messages
+    for msg in db["guest_messages"].find({"chat_id": chat_id}):
+        msg_id = str(msg["_id"])
+        msg["id"] = msg_id
+        unique_messages[msg_id] = msg
+
+    # Convertir a lista y ordenar
+    all_messages = list(unique_messages.values())
+    all_messages.sort(
+        key=lambda x: x[order_by],
+        reverse=desc
     )
-    return user_message, ai_message
+
+    # Actualizar el conteo total real
+    total_items_count = len(all_messages)
+
+    if total_items_count == 0:
+        return PaginationWindow(items=[], total_items_count=0)
+
+    # Aplicar paginación
+    paginated_messages = all_messages[offset : offset + limit]
+
+    # Formatear mensajes
+    for msg in paginated_messages:
+        if "_id" in msg:
+            msg.pop("_id")  # Removemos _id ya que ya tenemos el id
+        data.append(ItemType(**msg))
+
+    return PaginationWindow(items=data, total_items_count=total_items_count)

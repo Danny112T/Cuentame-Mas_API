@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 class Rated(Enum):
     EMPTY = "Empty"
     BAD = "Bad"
-    GOOD: str = "Good"
+    GOOD = "Good"
 
 
 @strawberry.enum
@@ -25,6 +25,7 @@ class Message(BaseModel):
     content: str
     bookmark: bool = False
     rated: Rated = Rated.EMPTY.value
+    session_id: str | None = None
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -40,5 +41,6 @@ class MessageType:
     content: str
     bookmark: bool
     rated: Rated
+    session_id: str | None = None
     created_at: datetime
     updated_at: datetime | None
