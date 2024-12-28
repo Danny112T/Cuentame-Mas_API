@@ -131,3 +131,14 @@ class UpdateIaModelInput:
 @strawberry.input
 class DeleteIaModelInput:
     id: str
+
+
+"""
+Guest Sessions Input
+"""
+
+@strawberry.input
+class CreateGuestMessageInput:
+    session_id: str
+    content: str
+    role: Role
