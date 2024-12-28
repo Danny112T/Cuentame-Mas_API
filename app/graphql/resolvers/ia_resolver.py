@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from fastapi import HTTPException, status
-from mlx_lm.utils import generate, load
+
+# from mlx_lm.utils import generate, load
 from pymongo import ASCENDING, DESCENDING
 
 from app.auth.JWTManager import JWTManager
@@ -19,14 +20,20 @@ def make_ia_model_dict(input: RegisterIaModelInput) -> dict:
         "path": input.path,
     }
 
+
 def update_ia_model_dict(input: RegisterIaModelInput, iamodel) -> dict:
     return {
         "name": input.name if input.name is not None else iamodel["name"],
-        "algorithm": input.algorithm if input.algorithm is not None else iamodel["algorithm"],
+        "algorithm": input.algorithm
+        if input.algorithm is not None
+        else iamodel["algorithm"],
         "params": input.params if input.params is not None else iamodel["params"],
-        "description": input.description if input.description is not None else iamodel["description"],
+        "description": input.description
+        if input.description is not None
+        else iamodel["description"],
         "path": input.path if input.path is not None else iamodel["path"],
     }
+
 
 # Register Model
 async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
@@ -54,6 +61,7 @@ async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
             detail="Failed to insert model",
         )
 
+
 # Get Model
 
 
@@ -76,7 +84,8 @@ async def update_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
     iamodeldict = update_ia_model_dict(input, iamodel)
 
     updated_result = db["models"].update_one(
-        {"_id": ObjectId(input.id)}, {"$set": iamodeldict},
+        {"_id": ObjectId(input.id)},
+        {"$set": iamodeldict},
         upsert=False,
     )
 
@@ -116,6 +125,7 @@ async def delete_ia_model(input: DeleteIaModelInput, token) -> IamodelType:
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Failed to delete model",
     )
+
 
 # Get all models
 async def get_models_pagination_window(
@@ -174,7 +184,7 @@ def generate_response(
 
     if algorithm == "MLX":
         path = db_ia_model.get("path")
-        model, tokenizer = load(path)
+        # model, tokenizer = load(path)
 
         conversation = list(
             db["messages"].find({"chat_id": chat_id}).sort("created_at", DESCENDING)
@@ -184,14 +194,20 @@ def generate_response(
             messages.append({"role": "user", "content": content})
         else:
             for message in conversation:
-                messages.append({"role": message["role"], "content": message["content"]})
+                messages.append(
+                    {"role": message["role"], "content": message["content"]}
+                )
             messages.append({"role": "user", "content": content})
 
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
+        response = generate(model, tokenizer, prompt, max_tokens=max_length)
 
-        return generate(model, tokenizer, prompt, max_tokens=max_length)
+        if response is not None:
+            return response
+
+        return "I'm sorry, I can't do that right now.", " "
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
