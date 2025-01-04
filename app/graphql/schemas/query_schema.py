@@ -300,20 +300,6 @@ class Query:
         offset: Optional[int] = 0,
         desc: Optional[bool] = False,
     ) -> PaginationWindow[MessageType]:
-        # Si hay token de autenticación, usar el método existente
-        if "Authorization" in info.context["request"].headers:
-            token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
-            return await get_msgs_pagination_window(
-                dataset="messages",
-                ItemType=MessageType,
-                order_by=order_by,
-                limit=limit,
-                offset=offset,
-                desc=desc,
-                token=token,
-                chat_id=chat_id,
-            )
-
         # Si hay session_id, usar el método para invitados
         return await get_guest_msgs_pagination_window(
             dataset="messages",
