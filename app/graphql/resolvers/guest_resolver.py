@@ -24,7 +24,7 @@ async def create_guest_session() -> GuestSessionType:
     if not chat_result.acknowledged:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error creating guest chat",
+            detail="Error al crear el chat de invitado",
         )
 
     guest_session = {
@@ -47,7 +47,7 @@ async def create_guest_session() -> GuestSessionType:
 
         return GuestSessionType(**response_data)
 
-    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error creating guest session")
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al crear la sesión de invitado")
 
 async def validate_guest_session(session_id: str) -> bool:
     session = db["guest_sessions"].find_one({"session_id": session_id, "status": "ACTIVE"})

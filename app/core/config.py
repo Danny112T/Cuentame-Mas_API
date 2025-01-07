@@ -1,3 +1,5 @@
+from fastapi_mail import ConnectionConfig
+from pydantic import SecretStr
 from starlette.config import Config
 from starlette.datastructures import Secret
 
@@ -18,3 +20,16 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
     config("ACCESS_TOKEN_EXPIRE_MINUTES", default="15000")
 )
 EMAIL_VAL: bool = bool(config("EMAIL_VALIDATION", default="False"))
+
+email_conf = ConnectionConfig(
+    MAIL_USERNAME=config("MAIL_USERNAME"),
+    MAIL_PASSWORD=config("MAIL_PASSWORD", cast=SecretStr),
+    MAIL_FROM=config("MAIL_FROM"),
+    MAIL_PORT=config("MAIL_PORT", cast=int),
+    MAIL_SERVER=config("MAIL_SERVER"),
+    MAIL_FROM_NAME="Cuentame Más",
+    MAIL_STARTTLS=config("MAIL_STARTTLS", cast=bool),
+    MAIL_SSL_TLS=config("MAIL_SSL_TLS", cast=bool),
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+)
