@@ -70,7 +70,7 @@ class JobScheduler:
             self.scheduler.add_job(
                 check_reminders,
                 'interval',
-                minutes=30,
+                minutes=1,
                 id="check_reminders",
                 replace_existing=True,
             )

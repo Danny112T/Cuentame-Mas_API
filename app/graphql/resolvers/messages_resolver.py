@@ -65,14 +65,14 @@ async def get_msgs_pagination_window(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     if user_info["sub"] != db["chats"].find_one({"_id":ObjectId(chat_id)}).get("user_id"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to see this mesages",
+            detail="No tienes autorización para ver estos mensajes",
         )
 
     data = []
@@ -80,7 +80,7 @@ async def get_msgs_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
     total_items_count = db[dataset].count_documents({"chat_id": chat_id})
@@ -95,7 +95,7 @@ async def get_msgs_pagination_window(
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+            detail=f"El offset ({offset}) está fuera fuera de rango (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -122,7 +122,7 @@ async def get_favs_msgs_pagination_window(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -130,7 +130,7 @@ async def get_favs_msgs_pagination_window(
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -141,7 +141,7 @@ async def get_favs_msgs_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
 
@@ -158,7 +158,7 @@ async def get_favs_msgs_pagination_window(
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+            detail=f"El offset ({offset}) esta fuera de rango (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -173,7 +173,7 @@ async def create_message(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -210,12 +210,12 @@ async def create_message(
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update chat with the messages",
+            detail="Error al actualizar el chat con los mensajes",
         )
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to send message",
+        detail="Error al enviar el mensaje",
     )
 
 
@@ -224,7 +224,7 @@ async def delete_message(input: DeleteMessageInput, token: str) -> tuple[Message
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -236,7 +236,7 @@ async def delete_message(input: DeleteMessageInput, token: str) -> tuple[Message
     if usr_message_deleted.deleted_count == 0 or ia_message_deleted.deleted_count == 0:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete message",
+            detail="Error al eliminar el mensaje",
         )
 
     return MessageType(**user_message), MessageType(**iamodel_message)
@@ -247,21 +247,21 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     if input.message_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing required fields",
+            detail="Faltan campos obligatorios",
         )
 
     message = db["messages"].find_one({"_id": ObjectId(input.message_id)})
     if message is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Message Not foud",
+            detail="Mensaje no encontrado",
         )
     rated = input.rated.value if input.rated is not None else message.get("rated")
     bookmark = input.bookmark if input.bookmark is not None else message.get("bookmark")
@@ -289,7 +289,7 @@ async def update_message(input: UpdateMessageInput, token: str) -> MessageType |
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to update message",
+        detail="Error al actualizar el mensaje",
     )
 
 
@@ -298,14 +298,14 @@ async def regenerate_message(input: RegenerateMessageInput, token: str) -> tuple
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     if input.content is None and input.user_message_id is None and input.iamodel_message_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing required fields",
+            detail="Faltan campos obligatorios",
         )
 
     idchat = db["messages"].find_one({"_id":ObjectId(input.user_message_id)}).get("chat_id")
@@ -325,7 +325,7 @@ async def regenerate_message(input: RegenerateMessageInput, token: str) -> tuple
     if updated_user_message.matched_count == 0 or updated_ia_message.matched_count == 0:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update messages",
+            detail="Error al actualizar los mensajes",
     )
 
     updated_usr = db["messages"].find_one({"_id":ObjectId(input.user_message_id)})
@@ -341,7 +341,7 @@ async def create_guest_message(input: CreateGuestMessageInput) -> tuple[MessageT
     if not await validate_guest_session(input.session_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid session id",
+            detail="Id de sesión de invitado inválido",
         )
 
     chat_id = db["guest_sessions"].find_one({"session_id":input.session_id}).get("chat_id")
@@ -398,7 +398,7 @@ async def create_guest_message(input: CreateGuestMessageInput) -> tuple[MessageT
         )
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to create guest message",
+        detail="Error al crear el mensaje de invitado",
     )
 
 async def get_guest_msgs_pagination_window(
@@ -419,7 +419,7 @@ async def get_guest_msgs_pagination_window(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid guest session",
+            detail="Sesión de invitado inválida",
         )
 
     # Verificar que el chat pertenece a la sesión
@@ -427,7 +427,7 @@ async def get_guest_msgs_pagination_window(
     if not chat or chat.get("session_id") != session_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to see these messages",
+            detail="No tienes autorización para ver estos mensajes",
         )
 
     data = []
@@ -436,7 +436,7 @@ async def get_guest_msgs_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
     # Usar un diccionario para mantener mensajes únicos
