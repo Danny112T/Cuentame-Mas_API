@@ -162,8 +162,6 @@ dependencies = [
     { name = "graphql-core" },
     { name = "matplotlib" },
     { name = "mlflow" },
-    { name = "mlx" },
-    { name = "mlx-lm" },
     { name = "passlib" },
     { name = "peft" },
     { name = "pip" },
@@ -194,8 +192,6 @@ requires-dist = [
     { name = "graphql-core", specifier = ">=3.2.3" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "mlflow", specifier = ">=2.18.0" },
-    { name = "mlx", specifier = ">=0.17.2" },
-    { name = "mlx-lm", specifier = ">=0.18.1" },
     { name = "passlib", specifier = ">=1.7.4" },
     { name = "peft", specifier = ">=0.13.2" },
     { name = "pip", specifier = ">=24.2" },
@@ -1107,36 +1103,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/93/69/53c19be8f05574b9955a2930d0c9b04403d5dd35afce05fbe664b5bfbbfc/mlflow_skinny-2.19.0.tar.gz", hash = "sha256:55a464082ecd48961f73f9a0a58b8d44bf2e77bd32632998f1dffd43ef48623c", size = 5503927 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/95/75f59715e39aa2224e5ecd8c52d5a305467e16a843ade2235a215599a1fa/mlflow_skinny-2.19.0-py3-none-any.whl", hash = "sha256:72c652545460db09dc5716241d2fcd9a211b7875444632fbe2d0b62a1f057694", size = 5854771 },
-]
-
-[[package]]
-name = "mlx"
-version = "0.21.1"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/2b/0e267c763d3bc7d1838a0077c4ebd3ad63640c16f66147acc94db6ea7177/mlx-0.21.1-cp312-cp312-macosx_13_0_arm64.whl", hash = "sha256:e18499e858b4d1ac2dd415f592ca8cacab5a3e1ace6ddd5cdd5885430ecb1ae2", size = 27540679 },
-    { url = "https://files.pythonhosted.org/packages/c5/7f/e9bad459055a87239d027f500960082169ca98656baa7b99a46f09daa40e/mlx-0.21.1-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:7e788594936b8d777db6911f50116e7e38e4a53f78825d9f99b4a45b4fc4c59a", size = 27323895 },
-    { url = "https://files.pythonhosted.org/packages/91/6d/13e2364c679bd2030dd66d4d55d13797376c237fda6d92ef1e717ccda166/mlx-0.21.1-cp312-cp312-manylinux_2_31_x86_64.whl", hash = "sha256:9b6e7a05b00546e483eae1779bf3ada41b292fd16ee2da788888cb72e65b25bc", size = 12343225 },
-    { url = "https://files.pythonhosted.org/packages/72/1f/267d7fb06eb257feb7c281f73472bcae9735c9a7c09fe86d9362069c85a7/mlx-0.21.1-cp313-cp313-macosx_13_0_arm64.whl", hash = "sha256:88328c058f4765b0376ac908b49e6711d25f93e02b972b8e68b73a9e1c358eab", size = 27540625 },
-    { url = "https://files.pythonhosted.org/packages/1b/54/e1a3c372842e256b01806f28de563043ba1fd12f62ea55194a94e8fd5240/mlx-0.21.1-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:15cc1962396de5c7cf873362ef97d62721d3e6d3b89095b0cddae8f6be78e45b", size = 27323843 },
-    { url = "https://files.pythonhosted.org/packages/8f/d5/a73b0ca60c8febe754a068e919099cddb3406043ab20b1324f75d7b401e6/mlx-0.21.1-cp313-cp313-manylinux_2_31_x86_64.whl", hash = "sha256:f5bce96e047b0ff1834e8ae73908aad358e8a4b545d29b575bc2ca111263ac2f", size = 12343224 },
-]
-
-[[package]]
-name = "mlx-lm"
-version = "0.20.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-    { name = "mlx" },
-    { name = "numpy" },
-    { name = "protobuf" },
-    { name = "pyyaml" },
-    { name = "transformers", extra = ["sentencepiece"] },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/3e/2bbb4242529786f47d6fff08347b29aa19cc34f699558ce42542f70d54aa/mlx_lm-0.20.6.tar.gz", hash = "sha256:40c867ded616d1238571ee4d574286d466814f592530f334a1f7e93c2dfd4bcf", size = 102466 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/78/081a1b51af7844dccd1e7d243b69017dd2d131f5bb00493d693c48d49e18/mlx_lm-0.20.6-py3-none-any.whl", hash = "sha256:285e260045321cd3058cd56795fc72b8cd8c12995da110947738bd6b797ba9ba", size = 133069 },
 ]
 
 [[package]]
@@ -2308,12 +2274,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/15/1a/936aeb4f88112f670b604f5748034568dbc2b9bbb457a8d4518b1a15510a/transformers-4.47.1.tar.gz", hash = "sha256:6c29c05a5f595e278481166539202bf8641281536df1c42357ee58a45d0a564a", size = 8707421 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f2/3a/8bdab26e09c5a242182b7ba9152e216d5ab4ae2d78c4298eb4872549cd35/transformers-4.47.1-py3-none-any.whl", hash = "sha256:d2f5d19bb6283cd66c893ec7e6d931d6370bbf1cc93633326ff1f41a40046c9c", size = 10133598 },
-]
-
-[package.optional-dependencies]
-sentencepiece = [
-    { name = "protobuf" },
-    { name = "sentencepiece" },
 ]
 
 [[package]]
