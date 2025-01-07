@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from fastapi import HTTPException, status
-from mlx_lm.utils import generate, load
+
+# from mlx_lm.utils import generate, load
 from pymongo import ASCENDING, DESCENDING
 
 from app.auth.JWTManager import JWTManager
@@ -187,7 +188,7 @@ def generate_response(
 
     if algorithm == "MLX":
         path = db_ia_model.get("path")
-        model, tokenizer = load(path)
+        # model, tokenizer = load(path)
 
         conversation = list(
             db["messages"].find({"chat_id": chat_id}).sort("created_at", ASCENDING)
@@ -208,8 +209,12 @@ def generate_response(
         prompt = tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
+        response = generate(model, tokenizer, prompt, max_tokens=max_length)
 
-        return generate(model, tokenizer, prompt, max_tokens=max_length)
+        if response is not None:
+            return response
+
+        return "I'm sorry, I can't do that right now.", " "
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
