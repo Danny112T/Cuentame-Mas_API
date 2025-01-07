@@ -7,6 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.core.db import db
+from app.jobs.reminder_job import check_reminders
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -65,6 +66,15 @@ class JobScheduler:
                 id="cleanup_guest_messages",
                 replace_existing=True,
             )
+
+            self.scheduler.add_job(
+                check_reminders,
+                'interval',
+                minutes=30,
+                id="check_reminders",
+                replace_existing=True,
+            )
+
             self.scheduler.start()
             logger.info("Scheduler started successfully")
         except Exception as e:
