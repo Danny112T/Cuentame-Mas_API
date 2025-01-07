@@ -57,7 +57,7 @@ async def create_chat(input: CreateChatInput, token: str) -> ChatType:
     chat_dict = make_chat_dict(input)
 
     if input.iamodel_id is None:
-        chat_dict["iamodel_id"] = "66f37d8bb38ac24ead72721e"
+        chat_dict["iamodel_id"] = "66ff79a6c3c7dfacdee54642"
 
     chat_dict["user_id"] = user_info["sub"]
 
@@ -215,17 +215,20 @@ async def delete_chat(id: str, token: str) -> ChatType:
             detail="No tienes autorización para eliminar este chat",
         )
 
-    total_messages = db["messages"].count_documents({"chat_id":id})
+    total_messages = db["messages"].count_documents({"chat_id": id})
     if total_messages != len(messages_data):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al recuperar los mensajes del chat",
         )
 
-    deleted_messages_result = db["messages"].delete_many({"chat_id":id})
+    deleted_messages_result = db["messages"].delete_many({"chat_id": id})
     delete_result = db["chats"].delete_one({"_id": ObjectId(id)})
 
-    if delete_result.deleted_count == 1 and deleted_messages_result.deleted_count == total_messages:
+    if (
+        delete_result.deleted_count == 1
+        and deleted_messages_result.deleted_count == total_messages
+    ):
         chat["id"] = str(chat.pop("_id"))
         chat["messages"] = [MessageType(**message) for message in messages_data]
         return ChatType(**chat)

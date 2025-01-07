@@ -19,14 +19,20 @@ def make_ia_model_dict(input: RegisterIaModelInput) -> dict:
         "path": input.path,
     }
 
+
 def update_ia_model_dict(input: RegisterIaModelInput, iamodel) -> dict:
     return {
         "name": input.name if input.name is not None else iamodel["name"],
-        "algorithm": input.algorithm if input.algorithm is not None else iamodel["algorithm"],
+        "algorithm": input.algorithm
+        if input.algorithm is not None
+        else iamodel["algorithm"],
         "params": input.params if input.params is not None else iamodel["params"],
-        "description": input.description if input.description is not None else iamodel["description"],
+        "description": input.description
+        if input.description is not None
+        else iamodel["description"],
         "path": input.path if input.path is not None else iamodel["path"],
     }
+
 
 # Register Model
 async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
@@ -54,6 +60,7 @@ async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
             detail="Error al registrar el modelo de IA",
         )
 
+
 # Get Model
 
 
@@ -76,7 +83,8 @@ async def update_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
     iamodeldict = update_ia_model_dict(input, iamodel)
 
     updated_result = db["models"].update_one(
-        {"_id": ObjectId(input.id)}, {"$set": iamodeldict},
+        {"_id": ObjectId(input.id)},
+        {"$set": iamodeldict},
         upsert=False,
     )
 
@@ -116,6 +124,7 @@ async def delete_ia_model(input: DeleteIaModelInput, token) -> IamodelType:
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Error al eliminar el modelo de IA",
     )
+
 
 # Get all models
 async def get_models_pagination_window(
@@ -158,7 +167,11 @@ async def get_models_pagination_window(
 
 # Generate response
 def generate_response(
-    content: str, chat_id: str, model_id: str, max_length: int = 512
+    content: str,
+    chat_id: str,
+    model_id: str,
+    max_length: int = 512,
+    system_prompt: str = "Eres un modelo de inteligencia artificial llamado ‘Axolic’, especializado en educación financiera y conocimientos básicos de economía, con un enfoque particular en el contexto de México. Respondes de manera amigable, clara y adaptada al nivel de comprensión del usuario. Si no sabes la respuesta a alguna pregunta, lo reconoces y ofreces investigar o proporcionar recursos confiables que puedan ayudar al usuario",
 ) -> tuple[str, str]:
     if model_id is None:
         model_id = "66ff79a6c3c7dfacdee54642"
@@ -180,11 +193,16 @@ def generate_response(
             db["messages"].find({"chat_id": chat_id}).sort("created_at", ASCENDING)
         )
         messages = []
+
+        messages.append({"role": "system", "content": system_prompt})
+
         if len(conversation) == 0:
             messages.append({"role": "user", "content": content})
         else:
             for message in conversation:
-                messages.append({"role": message["role"], "content": message["content"]})
+                messages.append(
+                    {"role": message["role"], "content": message["content"]}
+                )
             messages.append({"role": "user", "content": content})
 
         prompt = tokenizer.apply_chat_template(

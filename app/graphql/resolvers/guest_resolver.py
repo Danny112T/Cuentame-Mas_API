@@ -15,7 +15,7 @@ async def create_guest_session() -> GuestSessionType:
     guest_chat = {
         "session_id": session_id,
         "title": "Chat de invitado",
-        "iamodel_id": "66ff79a6c3c7dfacdee54642",
+        "iamodel_id": "677ccb0504bf6dc0e97b54b9",
         "created_at": datetime.now(),
         "messages": []
     }
