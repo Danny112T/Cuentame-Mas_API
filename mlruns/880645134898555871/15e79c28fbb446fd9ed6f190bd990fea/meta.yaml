@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/880645134898555871/15e79c28fbb446fd9ed6f190bd990fea/artifacts
+deleted_time: 1736123427811
+end_time: 1733939114807
+entry_point_name: ''
+experiment_id: '880645134898555871'
+lifecycle_stage: deleted
+run_id: 15e79c28fbb446fd9ed6f190bd990fea
+run_name: MLX-32_16
+run_uuid: 15e79c28fbb446fd9ed6f190bd990fea
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1733933774448
+status: 3
+tags: []
+user_id: danny

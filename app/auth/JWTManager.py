@@ -21,7 +21,7 @@ class JWTManager:
             if decode_token is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid credentials",
+                    detail="Credenciales inválidas",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             elif decode_token["exp"] <= current_timestamp:

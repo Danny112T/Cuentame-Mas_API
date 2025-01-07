@@ -35,7 +35,7 @@ async def create_reminder(input: CreateReminderInput, token: str) -> ReminderTyp
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -54,19 +54,19 @@ async def create_reminder(input: CreateReminderInput, token: str) -> ReminderTyp
             if update_result.modified_count == 0:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to update user with reminder",
+                    detail="Error al actualizar el usuario con el recordatorio",
                 )
             reminder["id"] = str(reminder.pop("_id"))
             return ReminderType(**reminder)
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve inserted reminder",
+                detail="Error al recuperar el recordatorio",
             )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to insert reminder",
+            detail="Error al crear el recordatorio",
         )
 
 
@@ -89,7 +89,7 @@ async def get_reminders_pagination_window(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -99,7 +99,7 @@ async def get_reminders_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
     if desc:
@@ -116,7 +116,7 @@ async def get_reminders_pagination_window(
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+            detail=f"El offset ({offset}) esta fuera de rango (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -129,7 +129,7 @@ async def getReminder(id: str, token: str) -> ReminderType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -143,7 +143,7 @@ async def getReminder(id: str, token: str) -> ReminderType:
     if reminder["user_id"] != user_info["sub"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to see this reminder",
+            detail="No tienes autorización para ver este recordatorio",
         )
     reminder["id"] = str(reminder.pop("_id"))
     return ReminderType(**reminder)
@@ -154,7 +154,7 @@ async def update_reminder(input: UpdateReminderInput, token: str) -> ReminderTyp
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -162,13 +162,13 @@ async def update_reminder(input: UpdateReminderInput, token: str) -> ReminderTyp
     if reminder is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reminder not found",
+            detail="Recordatorio no encontrado",
         )
 
     if reminder["user_id"] != user_info["sub"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to update this reminder",
+            detail="No tienes autorización para actualizar este recordatorio",
         )
 
     reminder_dict = makeUpdateReminderDict(input)
@@ -194,7 +194,7 @@ async def update_reminder(input: UpdateReminderInput, token: str) -> ReminderTyp
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to update reminder",
+        detail="Error al actualizar el recordatorio",
     )
 
 
@@ -203,7 +203,7 @@ async def delete_reminder(id: str, token: str) -> ReminderType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -211,13 +211,13 @@ async def delete_reminder(id: str, token: str) -> ReminderType:
     if reminder is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reminder not found",
+            detail="Recordatorio no encontrado",
         )
 
     if reminder["user_id"] != user_info["sub"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this reminder",
+            detail="No tienes autorización para eliminar este recordatorio",
         )
 
     db["reminders"].delete_one({"_id": ObjectId(id)})

@@ -59,7 +59,7 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
 async def create_user(input: CreateUserInput) -> UserType:
     if db["users"].find_one({"email": input.email}) is not None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya existe"
         )
 
     try:
@@ -70,7 +70,7 @@ async def create_user(input: CreateUserInput) -> UserType:
     if not fullmatch(REGEX, input.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
+            detail="La contraseña debe contener al menos una letra minúscula, una mayúscula, un dígito, un carácter especial y debe tener al menos 6 caracteres",
         )
 
     user_dict = makeCreateUserDict(input)
@@ -88,12 +88,12 @@ async def create_user(input: CreateUserInput) -> UserType:
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve inserted user",
+                detail="Error al recuperar el usuario",
             )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to insert user",
+            detail="Error al crear el usuario",
         )
 
 
@@ -102,36 +102,36 @@ async def update_user(input: UpdateUserInput, token: str) -> UserType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no existe"
         )
 
     user_dict = makeUpdateUserDict(input)
     if (input.old_password is not None) & (input.new_password is None):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The old password must be accompanied by the new password",
+            detail="La contraseña antigua debe ser acompañada por la nueva contraseña",
         )
     if input.new_password is not None:
         if input.old_password is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="The new password must be accompanied by the old password",
+                detail="La nueva contraseña debe ser acompañada por la antigua contraseña",
             )
         if not JWTManager.checkPassword(input.old_password, user["password"]):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect credentials"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Credenciales inválidas"
             )
         if not fullmatch(REGEX, input.new_password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character and must be at least 6 characters long",
+                detail="La contraseña debe contener al menos una letra minúscula, una mayúscula, un dígito, un carácter especial y debe tener al menos 6 caracteres",
             )
         user_dict["password"] = JWTManager.hashPassword(input.new_password)
 
@@ -165,19 +165,19 @@ async def delete_user(email: str, token: str) -> UserType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no existe"
         )
 
     if user["email"] != email:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email does not match"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El correo electrónico no coincide"
         )
 
     user["id"] = str(user.pop("_id"))
@@ -205,7 +205,7 @@ async def get_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
     if order_by is None:
@@ -235,7 +235,7 @@ async def get_pagination_window(
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+            detail=f"El offset ({offset}) esta fuera de rango (0-{total_items_count -1 })",
         )
 
     data = data[offset : offset + limit]
@@ -248,7 +248,7 @@ def getCurrentUser(token: str) -> UserType | None:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -284,11 +284,11 @@ async def login(input: loginInput) -> TokenType:
     user = db["users"].find_one({"email": input.email})
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no existe"
         )
     if not JWTManager.checkPassword(input.password, user["password"]):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect credentials"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Credenciales inválidas"
         )
 
     access_token = {

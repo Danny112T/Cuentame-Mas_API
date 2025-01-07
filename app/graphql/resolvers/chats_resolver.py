@@ -50,14 +50,14 @@ async def create_chat(input: CreateChatInput, token: str) -> ChatType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     chat_dict = make_chat_dict(input)
 
     if input.iamodel_id is None:
-        chat_dict["iamodel_id"] = "66f37d8bb38ac24ead72721e"
+        chat_dict["iamodel_id"] = "66ff79a6c3c7dfacdee54642"
 
     chat_dict["user_id"] = user_info["sub"]
 
@@ -72,19 +72,19 @@ async def create_chat(input: CreateChatInput, token: str) -> ChatType:
             if update_result.modified_count == 0:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to update user with chat",
+                    detail="Error al actualizar el usuario con el chat",
                 )
             chat["id"] = str(chat.pop("_id"))
             return ChatType(**chat)
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve inserted chat",
+                detail="Error al recuperar el chat",
             )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to insert chat",
+            detail="Error al crear el chat",
         )
 
 
@@ -107,7 +107,7 @@ async def get_chats_pagination_window(
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -136,7 +136,7 @@ async def get_chats_pagination_window(
     if offset != 0 and not 0 <= offset < db[dataset].count_documents({}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"offset ({offset}) is out of range (0-{total_items_count -1 })",
+            detail=f"El offset ({offset}) está fuera fuera de rango (0-{total_items_count -1 })",
         )
     data = data[offset : offset + limit]
 
@@ -148,7 +148,7 @@ async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -156,13 +156,13 @@ async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
     if chat is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chat not found",
+            detail="Chat no encontrado",
         )
 
     if chat["user_id"] != user_info["sub"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to update this chat",
+            detail="No tienes autorización para actualizar este chat",
         )
 
     chat_dict = update_chat_dict(input)
@@ -184,7 +184,7 @@ async def update_chat(input: UpdateChatInput, token: str) -> ChatType:
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to update chat",
+        detail="Error al actualizar el chat",
     )
 
 
@@ -193,7 +193,7 @@ async def delete_chat(id: str, token: str) -> ChatType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -206,31 +206,34 @@ async def delete_chat(id: str, token: str) -> ChatType:
     if chat is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chat not found",
+            detail="Chat no encontrado",
         )
 
     if chat["user_id"] != user_info["sub"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this chat",
+            detail="No tienes autorización para eliminar este chat",
         )
 
-    total_messages = db["messages"].count_documents({"chat_id":id})
+    total_messages = db["messages"].count_documents({"chat_id": id})
     if total_messages != len(messages_data):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve messages from chat",
+            detail="Error al recuperar los mensajes del chat",
         )
 
-    deleted_messages_result = db["messages"].delete_many({"chat_id":id})
+    deleted_messages_result = db["messages"].delete_many({"chat_id": id})
     delete_result = db["chats"].delete_one({"_id": ObjectId(id)})
 
-    if delete_result.deleted_count == 1 and deleted_messages_result.deleted_count == total_messages:
+    if (
+        delete_result.deleted_count == 1
+        and deleted_messages_result.deleted_count == total_messages
+    ):
         chat["id"] = str(chat.pop("_id"))
         chat["messages"] = [MessageType(**message) for message in messages_data]
         return ChatType(**chat)
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to delete chat",
+        detail="Error al eliminar el chat",
     )

@@ -53,12 +53,12 @@ async def register_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve inserted model",
+                detail="Error al recuperar el modelo de IA",
             )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to insert model",
+            detail="Error al registrar el modelo de IA",
         )
 
 
@@ -71,14 +71,14 @@ async def update_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
+            detail="Token inválido",
         )
 
     iamodel = db["models"].find_one({"_id": ObjectId(input.id)})
     if iamodel is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
+            detail="Modelo de IA no encontrado",
         )
 
     iamodeldict = update_ia_model_dict(input, iamodel)
@@ -96,7 +96,7 @@ async def update_ia_model(input: RegisterIaModelInput, token) -> IamodelType:
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to update model",
+        detail="Error al actualizar el modelo de IA",
     )
 
 
@@ -106,13 +106,13 @@ async def delete_ia_model(input: DeleteIaModelInput, token) -> IamodelType:
     if user_info is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
+            detail="Token inválido",
         )
     model = db["models"].find_one({"_id": ObjectId(input.id)})
     if model is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
+            detail="Modelo de IA no encontrado",
         )
 
     deleted_model = db["models"].delete_one({"_id": ObjectId(input.id)})
@@ -123,7 +123,7 @@ async def delete_ia_model(input: DeleteIaModelInput, token) -> IamodelType:
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to delete model",
+        detail="Error al eliminar el modelo de IA",
     )
 
 
@@ -146,7 +146,7 @@ async def get_models_pagination_window(
     if limit <= 0 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"limit ({limit}) must be between 0-100",
+            detail=f"El limite ({limit}) debe estar entre 0-100",
         )
 
     if order_by is None:
@@ -160,7 +160,7 @@ async def get_models_pagination_window(
     total_items_count = db[dataset].count_documents({})
     if offset != 0 and not 0 <= offset <= total_items_count:
         raise Exception(
-            f"offset ({offset}) is out of range" f"(0-{total_items_count -1 })"
+            f"El offset ({offset}) esta fuera de rango" f"(0-{total_items_count -1 })"
         )
 
     return PaginationWindow(items=data, total_items_count=total_items_count)
@@ -168,7 +168,11 @@ async def get_models_pagination_window(
 
 # Generate response
 def generate_response(
-    content: str, chat_id: str, model_id: str, max_length: int = 512
+    content: str,
+    chat_id: str,
+    model_id: str,
+    max_length: int = 512,
+    system_prompt: str = "Eres un modelo de inteligencia artificial llamado ‘Axolic’, especializado en educación financiera y conocimientos básicos de economía, con un enfoque particular en el contexto de México. Respondes de manera amigable, clara y adaptada al nivel de comprensión del usuario. Si no sabes la respuesta a alguna pregunta, lo reconoces y ofreces investigar o proporcionar recursos confiables que puedan ayudar al usuario",
 ) -> tuple[str, str]:
     if model_id is None:
         model_id = "66ff79a6c3c7dfacdee54642"
@@ -177,7 +181,7 @@ def generate_response(
     if db_ia_model is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
+            detail="Modelo de IA no encontrado",
         )
 
     algorithm = db_ia_model.get("algorithm")
@@ -187,9 +191,12 @@ def generate_response(
         # model, tokenizer = load(path)
 
         conversation = list(
-            db["messages"].find({"chat_id": chat_id}).sort("created_at", DESCENDING)
+            db["messages"].find({"chat_id": chat_id}).sort("created_at", ASCENDING)
         )
         messages = []
+
+        messages.append({"role": "system", "content": system_prompt})
+
         if len(conversation) == 0:
             messages.append({"role": "user", "content": content})
         else:
@@ -211,5 +218,5 @@ def generate_response(
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Another algorithm is not implemented yet",
+        detail="Otros algoritmos no están implementados aún",
     )
