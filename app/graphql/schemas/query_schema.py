@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 import strawberry
@@ -8,7 +9,11 @@ from app.auth.JWTBearer import IsAuthenticated
 from app.core.db import db
 from app.graphql.resolvers.chats_resolver import get_chats_pagination_window
 from app.graphql.resolvers.ia_resolver import get_models_pagination_window
-from app.graphql.resolvers.messages_resolver import get_msgs_pagination_window, get_favs_msgs_pagination_window
+from app.graphql.resolvers.messages_resolver import (
+    get_favs_msgs_pagination_window,
+    get_guest_msgs_pagination_window,
+    get_msgs_pagination_window,
+)
 from app.graphql.resolvers.reminders_resolver import (
     get_reminders_pagination_window,
     getReminder,
@@ -267,4 +272,48 @@ class Query:
             limit=limit,
             offset=offset,
             desc=desc,
+        )
+
+    @strawberry.field(description="Get popular guest queries")
+    async def get_popular_queries(
+        self, days: int = 7, limit: int = 10
+    ) -> list[str]:
+        cutoff_date = datetime.now() - timedelta(days=days)
+        pipeline = [
+            {"$match": {"created_at": {"$gte": cutoff_date}}},
+            {"$group": {"_id": "$content", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
+        ]
+
+        results = list(db["guest_messages"].aggregate(pipeline))
+        return [r["_id"] for r in results]
+
+    @strawberry.field(description="Get messages from a chat (authenticated or guest)")
+    async def get_chat_messages(
+        self,
+        info,
+        order_by: str,
+        limit: int,
+        chat_id: str,
+        session_id: Optional[str] = None,  # Para invitados
+        offset: Optional[int] = 0,
+        desc: Optional[bool] = False,
+    ) -> PaginationWindow[MessageType]:
+        # Si hay session_id, usar el método para invitados
+        return await get_guest_msgs_pagination_window(
+            dataset="messages",
+            ItemType=MessageType,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            chat_id=chat_id,
+            session_id=session_id,
+        )
+
+        # Si no hay ni token ni session_id
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication or guest session required",
         )

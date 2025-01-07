@@ -12,6 +12,7 @@ class Reminder(BaseModel):
     finishDate: datetime
     created_at: datetime
     updated_at: datetime | None = None
+    notification_sent: bool = False
 
     class Config:
         from_attributes = True
