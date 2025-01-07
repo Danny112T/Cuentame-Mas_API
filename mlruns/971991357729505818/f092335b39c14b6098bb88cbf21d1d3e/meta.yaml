@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/971991357729505818/f092335b39c14b6098bb88cbf21d1d3e/artifacts
+deleted_time: 1733341263426
+end_time: 1733341255472
+entry_point_name: ''
+experiment_id: '971991357729505818'
+lifecycle_stage: deleted
+run_id: f092335b39c14b6098bb88cbf21d1d3e
+run_name: Hiperparametros FT MLX 2.0
+run_uuid: f092335b39c14b6098bb88cbf21d1d3e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1733341235215
+status: 4
+tags: []
+user_id: danny

@@ -76,7 +76,7 @@ async def create_user(input: CreateUserInput) -> UserType:
     user_dict = makeCreateUserDict(input)
     user_dict["email"] = email_info.normalized
     user_dict["password"] = JWTManager.hashPassword(input.password)
-    user_dict["regimenFiscal"] = RegimenFiscal.NO_DEFINIDO.value
+    user_dict["regimenFiscal"] = get_regimen_fiscal_description(RegimenFiscal.NO_DEFINIDO)
     user_dict["reminders"] = []
 
     insert_result = db["users"].insert_one(user_dict)

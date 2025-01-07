@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/663874797746491676/ac0b51a18ac34c639ced37883f149db5/artifacts
+deleted_time: 1733295457449
+end_time: 1733292537942
+entry_point_name: ''
+experiment_id: '663874797746491676'
+lifecycle_stage: deleted
+run_id: ac0b51a18ac34c639ced37883f149db5
+run_name: 'Hiperparametros FT '
+run_uuid: ac0b51a18ac34c639ced37883f149db5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1733292532909
+status: 3
+tags: []
+user_id: root
