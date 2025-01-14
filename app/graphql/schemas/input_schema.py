@@ -33,6 +33,10 @@ class loginInput:
     email: str
     password: str
 
+@strawberry.input
+class UpdateUserNotificationPreferencesInput:
+    email_preferences: Optional[bool] = None
+    push_preferences: Optional[bool] = None
 
 """
 Reminders Input

@@ -73,6 +73,8 @@ class User(BaseModel):
     updated_at: datetime | None = None
     reminders: List[str] = []
     chats: List[str] = []
+    email_preferences: bool = False
+    push_preferences: bool = False
 
     class Config:
         from_attributes = True
@@ -90,6 +92,8 @@ class UserType:
     updated_at: datetime | None
     reminders: List[ReminderType]
     chats: List[ChatType]
+    email_preferences: bool
+    push_preferences: bool
 
 
 class Token(BaseModel):

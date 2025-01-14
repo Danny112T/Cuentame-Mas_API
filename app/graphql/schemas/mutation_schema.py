@@ -50,6 +50,28 @@ class Mutation:
         return await usr.update_user(input, token)
 
     @strawberry.mutation(
+        description="Update a user notification preferences", permission_classes=[IsAuthenticated]
+    )
+    async def update_user_notification_preferences(self, input: ins.UpdateUserNotificationPreferencesInput, info) -> UserType:
+        if "Authorization" not in info.context["request"].headers:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        if (
+            info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+            is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not authenticated",
+            )
+
+        token = info.context["request"].headers["Authorization"].split("Bearer ")[-1]
+        return await usr.update_user_notificatino_preferences(input, token)
+
+    @strawberry.mutation(
         description="delete a user", permission_classes=[IsAuthenticated]
     )
     async def delete_user(self, email: str, info) -> UserType:

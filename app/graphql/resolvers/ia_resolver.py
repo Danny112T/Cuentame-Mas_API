@@ -1,7 +1,7 @@
 from bson.objectid import ObjectId
 from fastapi import HTTPException, status
 
-# from mlx_lm.utils import generate, load
+from mlx_lm.utils import generate, load
 from pymongo import ASCENDING, DESCENDING
 
 from app.auth.JWTManager import JWTManager
@@ -172,7 +172,7 @@ def generate_response(
     chat_id: str,
     model_id: str,
     max_length: int = 512,
-    system_prompt: str = "Eres un modelo de inteligencia artificial llamado ‘Axolic’, especializado en educación financiera y conocimientos básicos de economía, con un enfoque particular en el contexto de México. Respondes de manera amigable, clara y adaptada al nivel de comprensión del usuario. Si no sabes la respuesta a alguna pregunta, lo reconoces y ofreces investigar o proporcionar recursos confiables que puedan ayudar al usuario",
+    system_prompt: str = "Eres un modelo de inteligencia artificial llamado ‘Axolic’, especializado en educación financiera y conocimientos básicos de economía, con un enfoque particular en el contexto de México. Respondes de manera amigable, clara y concisa. Si no sabes la respuesta a alguna pregunta, lo reconoces y ofreces investigar o proporcionar recursos confiables que puedan ayudar al usuario",
 ) -> tuple[str, str]:
     if model_id is None:
         model_id = "66ff79a6c3c7dfacdee54642"
@@ -188,7 +188,7 @@ def generate_response(
 
     if algorithm == "MLX":
         path = db_ia_model.get("path")
-        # model, tokenizer = load(path)
+        model, tokenizer = load(path)
 
         conversation = list(
             db["messages"].find({"chat_id": chat_id}).sort("created_at", ASCENDING)

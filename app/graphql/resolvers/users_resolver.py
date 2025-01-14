@@ -19,6 +19,7 @@ from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
     loginInput,
+    UpdateUserNotificationPreferencesInput,
 )
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.chat import ChatType
@@ -53,6 +54,12 @@ def makeUpdateUserDict(input: UpdateUserInput) -> dict:
         "email": input.email,
         "regimenFiscal": input.regimenFiscal,
         "updated_at": datetime.now(),
+    }
+
+def makeUpdateUserNotificationPreferencesDict(input: UpdateUserNotificationPreferencesInput) -> dict:
+    return {
+        "email_preferences": input.email_preferences,
+        "push_preferences": input.push_preferences,
     }
 
 
@@ -301,4 +308,43 @@ async def login(input: loginInput) -> TokenType:
             "access_token": jwt.encode(access_token, JWT_SECRET, algorithm=ALGORITHM),
             "token_type": "bearer",
         }
+    )
+
+
+async def update_user_notificatino_preferences(input: UpdateUserNotificationPreferencesInput, token: str) -> UserType:
+    user_info = JWTManager.verify_jwt(token)
+    if user_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db["users"].find_one({"_id": ObjectId(user_info["sub"])})
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no existe"
+        )
+
+    user_dict = makeUpdateUserNotificationPreferencesDict(input)
+
+    usr_email_pref = user.get("email_preferences")
+    usr_push_pref = user.get("push_preferences")
+
+    user_dict["email_preferences"] = input.email_preferences if input.email_preferences is not None else usr_email_pref
+    user_dict["push_preferences"] = input.push_preferences if input.push_preferences is not None else usr_push_pref
+    user_dict["updated_at"] = datetime.now()
+
+    update_result = db["users"].update_one(
+        {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
+    )
+
+    if update_result.matched_count == 1:
+        updated_user = db["users"].find_one({"_id": ObjectId(user["_id"])})
+        updated_user["id"] = str(updated_user.pop("_id"))
+        return UserType(**updated_user)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Error al actualizar el usuario",
     )

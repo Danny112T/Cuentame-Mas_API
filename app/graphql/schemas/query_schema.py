@@ -39,10 +39,9 @@ class Query:
         if user:
             user["id"] = str(user.pop("_id"))
             return UserType(**user)
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     @strawberry.field(description="Get a user by email")
     async def get_user_by_email(self, email: str) -> UserType:
