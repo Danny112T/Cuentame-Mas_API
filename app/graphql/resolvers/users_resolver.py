@@ -18,8 +18,8 @@ from app.core.db import db
 from app.graphql.schemas.input_schema import (
     CreateUserInput,
     UpdateUserInput,
-    loginInput,
     UpdateUserNotificationPreferencesInput,
+    loginInput,
 )
 from app.graphql.types.paginationWindow import PaginationWindow
 from app.models.chat import ChatType
@@ -41,7 +41,7 @@ def makeCreateUserDict(input: CreateUserInput) -> dict:
     return {
         "name": input.name,
         "lastname": input.lastname,
-        "email": input.email,
+        "email": input.email.lower(),
         "created_at": datetime.now(),
         "updated_at": None,
     }
@@ -68,9 +68,9 @@ async def create_user(input: CreateUserInput) -> UserType:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario ya existe"
         )
-
+    email = input.email.lower()
     try:
-        email_info = validate_email(input.email, check_deliverability=EMAIL_VAL)
+        email_info = validate_email(email, check_deliverability=EMAIL_VAL)
     except EmailNotValidError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e)
 
@@ -156,6 +156,8 @@ async def update_user(input: UpdateUserInput, token: str) -> UserType:
 
     elif isinstance(user_dict["regimenFiscal"], RegimenFiscal):
             user_dict["regimenFiscal"] = get_regimen_fiscal_description(user_dict["regimenFiscal"])
+
+    user_dict["email"] = user_dict["email"].lower()
 
     update_result = db["users"].update_one(
         {"_id": ObjectId(user["_id"])}, {"$set": user_dict}, upsert=False
@@ -288,7 +290,8 @@ def getCurrentUser(token: str) -> UserType | None:
 
 
 async def login(input: loginInput) -> TokenType:
-    user = db["users"].find_one({"email": input.email})
+    email = input.email.lower()
+    user = db["users"].find_one({"email": email})
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no existe"

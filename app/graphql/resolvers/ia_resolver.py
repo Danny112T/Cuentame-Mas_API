@@ -1,6 +1,5 @@
 from bson.objectid import ObjectId
 from fastapi import HTTPException, status
-
 from mlx_lm.utils import generate, load
 from pymongo import ASCENDING, DESCENDING
 
